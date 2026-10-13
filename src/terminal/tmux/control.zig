@@ -233,11 +233,10 @@ pub const Parser = struct {
             const starts = region.starts();
             const ends = region.ends();
 
-            const id = std.fmt.parseInt(
-                usize,
-                line[@intCast(starts[1])..@intCast(ends[1])],
-                10,
-            ) catch unreachable;
+            const id = parseDecimalId(line[@intCast(starts[1])..@intCast(ends[1])]) orelse {
+                log.warn("failed to match notification cmd={s} line=\"{s}\"", .{ cmd, line });
+                break :cmd;
+            };
             const data = line[@intCast(starts[2])..@intCast(ends[2])];
 
             // Important: do not clear buffer here since name points to it
@@ -264,11 +263,10 @@ pub const Parser = struct {
             const starts = region.starts();
             const ends = region.ends();
 
-            const id = std.fmt.parseInt(
-                usize,
-                line[@intCast(starts[1])..@intCast(ends[1])],
-                10,
-            ) catch unreachable;
+            const id = parseDecimalId(line[@intCast(starts[1])..@intCast(ends[1])]) orelse {
+                log.warn("failed to match notification cmd={s} line=\"{s}\"", .{ cmd, line });
+                break :cmd;
+            };
             const name = line[@intCast(starts[2])..@intCast(ends[2])];
 
             // Important: do not clear buffer here since name points to it
@@ -304,11 +302,10 @@ pub const Parser = struct {
             const starts = region.starts();
             const ends = region.ends();
 
-            const id = std.fmt.parseInt(
-                usize,
-                line[@intCast(starts[1])..@intCast(ends[1])],
-                10,
-            ) catch unreachable;
+            const id = parseDecimalId(line[@intCast(starts[1])..@intCast(ends[1])]) orelse {
+                log.warn("failed to match notification cmd={s} line=\"{s}\"", .{ cmd, line });
+                break :cmd;
+            };
             const layout = line[@intCast(starts[2])..@intCast(ends[2])];
             const visible_layout = line[@intCast(starts[3])..@intCast(ends[3])];
             const raw_flags = line[@intCast(starts[4])..@intCast(ends[4])];
@@ -342,11 +339,10 @@ pub const Parser = struct {
             const starts = region.starts();
             const ends = region.ends();
 
-            const id = std.fmt.parseInt(
-                usize,
-                line[@intCast(starts[1])..@intCast(ends[1])],
-                10,
-            ) catch unreachable;
+            const id = parseDecimalId(line[@intCast(starts[1])..@intCast(ends[1])]) orelse {
+                log.warn("failed to match notification cmd={s} line=\"{s}\"", .{ cmd, line });
+                break :cmd;
+            };
 
             self.buffer.clearRetainingCapacity();
             self.state = .idle;
@@ -372,11 +368,10 @@ pub const Parser = struct {
             const starts = region.starts();
             const ends = region.ends();
 
-            const id = std.fmt.parseInt(
-                usize,
-                line[@intCast(starts[1])..@intCast(ends[1])],
-                10,
-            ) catch unreachable;
+            const id = parseDecimalId(line[@intCast(starts[1])..@intCast(ends[1])]) orelse {
+                log.warn("failed to match notification cmd={s} line=\"{s}\"", .{ cmd, line });
+                break :cmd;
+            };
             const name = line[@intCast(starts[2])..@intCast(ends[2])];
 
             // Important: do not clear buffer here since name points to it
@@ -403,16 +398,14 @@ pub const Parser = struct {
             const starts = region.starts();
             const ends = region.ends();
 
-            const window_id = std.fmt.parseInt(
-                usize,
-                line[@intCast(starts[1])..@intCast(ends[1])],
-                10,
-            ) catch unreachable;
-            const pane_id = std.fmt.parseInt(
-                usize,
-                line[@intCast(starts[2])..@intCast(ends[2])],
-                10,
-            ) catch unreachable;
+            const window_id = parseDecimalId(line[@intCast(starts[1])..@intCast(ends[1])]) orelse {
+                log.warn("failed to match notification cmd={s} line=\"{s}\"", .{ cmd, line });
+                break :cmd;
+            };
+            const pane_id = parseDecimalId(line[@intCast(starts[2])..@intCast(ends[2])]) orelse {
+                log.warn("failed to match notification cmd={s} line=\"{s}\"", .{ cmd, line });
+                break :cmd;
+            };
 
             self.buffer.clearRetainingCapacity();
             self.state = .idle;
@@ -465,11 +458,10 @@ pub const Parser = struct {
             const ends = region.ends();
 
             const client = line[@intCast(starts[1])..@intCast(ends[1])];
-            const session_id = std.fmt.parseInt(
-                usize,
-                line[@intCast(starts[2])..@intCast(ends[2])],
-                10,
-            ) catch unreachable;
+            const session_id = parseDecimalId(line[@intCast(starts[2])..@intCast(ends[2])]) orelse {
+                log.warn("failed to match notification cmd={s} line=\"{s}\"", .{ cmd, line });
+                break :cmd;
+            };
             const name = line[@intCast(starts[3])..@intCast(ends[3])];
 
             // Important: do not clear buffer here since client/name point to it
@@ -493,6 +485,14 @@ pub const Parser = struct {
         self.buffer.deinit();
     }
 };
+
+/// A tmux numeric id: a non-empty run of decimal digits that fits in `usize`.
+/// Oversized values are rejected so a hostile notification cannot crash us.
+fn parseDecimalId(text: []const u8) ?usize {
+    if (text.len == 0) return null;
+    for (text) |byte| if (!std.ascii.isDigit(byte)) return null;
+    return std.fmt.parseInt(usize, text, 10) catch null;
+}
 
 /// Possible notification types from tmux control mode. These are documented
 /// in tmux(1). A lot of the simple documentation was copied from that man
@@ -855,6 +855,32 @@ test "tmux window-pane-changed" {
     try testing.expect(n == .window_pane_changed);
     try testing.expectEqual(42, n.window_pane_changed.window_id);
     try testing.expectEqual(2, n.window_pane_changed.pane_id);
+}
+
+test "tmux notification ids reject overflow" {
+    const testing = std.testing;
+    const alloc = testing.allocator;
+
+    // Railty does not carry the window-close/session-window-changed
+    // notifications, so harden every id parse that does exist. An id that
+    // does not fit in usize is a bad notification, not a crash.
+    const lines: []const []const u8 = &.{
+        "%output %1111111111111111111111 foo",
+        "%session-changed $1111111111111111111111 foo",
+        "%layout-change @1111111111111111111111 1234x791,0,0{617x791,0,0,0} 1234x791,0,0{617x791,0,0,0} *-",
+        "%window-add @1111111111111111111111",
+        "%window-renamed @1111111111111111111111 foo",
+        "%window-pane-changed @1111111111111111111111 %2",
+        "%window-pane-changed @2 %1111111111111111111111",
+        "%client-session-changed client $1111111111111111111111 foo",
+    };
+    for (lines) |line| {
+        var c: Parser = .{ .buffer = .init(alloc) };
+        defer c.deinit();
+        for (line) |byte| try testing.expect(try c.put(byte) == null);
+        try testing.expect(try c.put('\n') == null);
+        try testing.expect(c.state == .idle);
+    }
 }
 
 test "tmux client-detached" {
