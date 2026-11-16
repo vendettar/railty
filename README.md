@@ -1,67 +1,81 @@
-# Ghostty Sidegeist
+# 🛤️ Railty
 
-**Personal fork of [Ghostty](https://github.com/ghostty-org/ghostty)** with a sidebar tab system and a built-in git panel for macOS. For the official Ghostty terminal, visit [ghostty.org](https://ghostty.org). All credit goes to them.
+**A lightweight, native macOS terminal with vertical tabs.**
 
-🧪 **Experimental**  
-Please note that this is experimental and I built it for my own use.
+Keep the speed and simplicity of Ghostty, with a better tab experience.
 
-📦 **[Download Ghostty Sidegeist for macOS](https://github.com/tomreinert/ghostty-sidegeist/releases/latest/download/Ghostty-Sidegeist.zip)**
+Railty is a free, open-source, community-driven macOS terminal fork maintained independently. It is derived from Ghostty Sidegeist, which is itself based on Ghostty.
 
-<img width="1125" height="749" alt="ghostty-sidebar" src="https://github.com/user-attachments/assets/919a9220-4e07-4b2e-b491-c9d385b6585f" />
+## Features
 
+- **Native vertical tabs** — a sidebar shows tab titles, working directories, Git branches, and custom status entries.
+- **Tab management** — rename, color, close, and reorder tabs; drag tabs between windows or out into a new window.
+- **Attention indicators** — identify tabs with terminal bells or notifications.
+- **Git panel** — inspect the selected tab's branch, sync status, and changed files; checkout branches, commit, push, and pull. Open changed files in your configured editor.
+- **Ghostty terminal engine** — terminal rendering and core terminal behavior are powered by Ghostty.
+- **macOS-native interface** — built with the platform's native app and window frameworks. Sidebar colors follow the terminal palette, with controls for card borders and inactive tab colors.
+- **Tab control CLI** — the included `ghosttyctl` utility can rename tabs, set status and color metadata, send notifications, and query tab state.
 
-## Sidebar
+## Screenshots
 
-Replaces the native tab bar with a left sidebar. The top shows rich tab cards; a [git panel](#git-panel) is pinned to the bottom.
+![Railty's vertical sidebar showing terminal tabs, working directories, Git branches, and status](https://github.com/user-attachments/assets/919a9220-4e07-4b2e-b491-c9d385b6585f)
 
-- **Title, directory, git branch** — git branch detected automatically, no setup needed
-- **Custom status entries** — show ports, environments, or any metadata via CLI
-- **Attention indicators** — orange dot on tabs with notifications or bell
-- **Drag-and-drop** — reorder tabs by dragging
-- **Move between windows** — drag a tab card out of the sidebar and drop it on another window (or anywhere else for a new window); the same actions are in the tab's context menu
-- **Theme-aware** — colors derived from your terminal theme
-- **Git panel** — branch, changes, and commit / push / pull for the selected tab's repo ([details](#git-panel))
+## Installation
 
-### Config
+There is no Railty-specific macOS release package yet. Build from source on macOS:
 
+```sh
+git clone https://github.com/vendettar/railty.git
+cd railty
+zig build
 ```
-# Choose which tab-card fields to show (default: all)
+
+Install the Zig version specified in [`build.zig`](build.zig). Building the macOS app also requires Xcode, the macOS SDK, and the Metal Toolchain. See [HACKING.md](HACKING.md) for build environment details.
+
+The macOS app target still uses the inherited Ghostty app name and bundle identity.
+
+## Configuration
+
+Add these supported settings to your Ghostty configuration file:
+
+```ini
+# Tab card fields: title, directory, git-branch, status (all shown by default)
 sidebar-fields = title,directory,git-branch,status
 
-# Show the git panel at the bottom of the sidebar (default: true)
+# Show the Git panel at the bottom of the sidebar (default: true)
 sidebar-git = true
 ```
 
-### CLI
+Set `sidebar-git = false` to hide the Git panel. Status entries can be set from the CLI:
 
-Install: symlink `cli/ghosttyctl` to somewhere on your PATH (e.g. `~/.local/bin/ghosttyctl`).
-
-```bash
-ghosttyctl rename "My Tab"                                    # rename tab
-ghosttyctl notify --title "Done" --body "Build finished"      # send notification
-ghosttyctl set-status server "localhost:3000" --icon network  # add status entry
-ghosttyctl clear-status server                                # remove it
-ghosttyctl list                                               # list all tabs
-ghosttyctl current                                            # current tab info
+```sh
+ghosttyctl rename "Build"
+ghosttyctl set-status task "Compiling" --icon hammer
+ghosttyctl notify --title "Build" --body "Finished"
+ghosttyctl list
 ```
 
-### Claude Code
+The CLI script is `cli/ghosttyctl`. From the repository root, you can put it on your `PATH` with:
 
-Add to your `~/.claude/CLAUDE.md` so Claude Code can name its tabs and set status:
-
-```markdown
-- Rename the workspace using: `ghosttyctl rename "Claude: <name>"`. Name it after the work being done.
-- Set sidebar status entries using `ghosttyctl set-status <key> <value> [--icon <sf-symbol>]` and clear with `ghosttyctl clear-status <key>`.
+```sh
+mkdir -p "$HOME/.local/bin"
+ln -s "$PWD/cli/ghosttyctl" "$HOME/.local/bin/ghosttyctl"
 ```
 
-## Git panel
+Ensure `$HOME/.local/bin` is on your `PATH`.
 
-A small git panel pinned to the bottom of the sidebar, scoped to the selected tab's repo:
+## Development
 
-- **Branch + sync** — current branch, ahead/behind, and inline checkout / commit / push / pull
-- **Changes** — pending files with colour-coded status (`M` modified, `A` added, `D` deleted, `?` untracked, `U` conflict)
-- **Click to open** — click a file to open it in your editor via `$VISUAL`/`$EDITOR` (e.g. Cursor, VS Code)
+Use `zig build` to build the app and `zig build test` to run the Zig test suite. [AGENTS.md](AGENTS.md) lists repository commands, and [HACKING.md](HACKING.md) documents the inherited build environment and technical workflow.
 
-This one is especially personal, built around how I work day to day. If it's not for you, turn it off with `sidebar-git = false` (see [Config](#config) above).
+Contributions should target this repository. Submit proposed changes as pull requests to Railty.
 
----
+## Upstream and Credits
+
+Railty is independently maintained and derived from [Ghostty Sidegeist](https://github.com/tomreinert/ghostty-sidegeist), created by [Tom Reinert](https://github.com/tomreinert). Ghostty Sidegeist is based on [Ghostty](https://github.com/ghostty-org/ghostty). Thanks to Tom Reinert, Mitchell Hashimoto, and the contributors to both upstream projects for the work Railty builds on.
+
+Railty is not an official Ghostty project or release.
+
+## License
+
+Railty is distributed under the MIT License. See [LICENSE](LICENSE) for the full text and preserved copyright notice for Mitchell Hashimoto and Ghostty contributors.
