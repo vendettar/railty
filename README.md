@@ -22,17 +22,63 @@ Railty is a free, open-source, community-driven macOS terminal fork maintained i
 
 ## Installation
 
-There is no Railty-specific macOS release package yet. Build from source on macOS:
+Install with Homebrew from the Railty tap:
 
 ```sh
-git clone https://github.com/vendettar/railty.git
-cd railty
-zig build
+brew tap vendettar/railty
+brew install --cask railty
 ```
 
-Install the Zig version specified in [`build.zig`](build.zig). Building the macOS app also requires Xcode, the macOS SDK, and the Metal Toolchain. See [HACKING.md](HACKING.md) for build environment details.
+Update or uninstall later with:
 
-The macOS app target still uses the inherited Ghostty app name and bundle identity.
+```sh
+brew update
+brew upgrade --cask railty
+brew uninstall --cask railty
+```
+
+You can also download `Railty-macos-arm64.zip` directly from
+[GitHub Releases](https://github.com/vendettar/railty/releases) and copy
+`Railty.app` into `/Applications`. Releases are built by the
+`Railty Release` workflow when a `v*` tag is pushed.
+
+- Supported macOS: 13.0 (Ventura) or later.
+- Supported CPU: Apple Silicon (arm64) only at present. The published ZIP is
+  **not** a Universal binary; Intel builds are not shipped yet.
+- Signing: release builds are ad-hoc signed unless Developer ID signing and
+  notarization secrets are configured. Unsigned downloads may be blocked by
+  macOS Gatekeeper; Homebrew installs normally clear the download quarantine.
+  To approve a manually downloaded copy, use System Settings → Privacy &
+  Security, or right-click the app and choose Open.
+- Coexistence: `Railty.app` uses the bundle ID `com.vendettar.railty`
+  and its own Application Support directory, so it does not replace or delete
+  an official `Ghostty.app`. The shared Ghostty config file
+  (`~/.config/ghostty/config.ghostty`) is still read.
+
+To build from source instead, see [HACKING.md](HACKING.md); the pinned Zig
+version is declared in [`build.zig.zon`](build.zig.zon). Building the macOS app
+requires Xcode, the macOS SDK, and the Metal Toolchain.
+
+### Releasing
+
+Push a `vX.Y.Z` tag to build and publish a release:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+`workflow_dispatch` on the same workflow creates a **draft** test release
+instead of a public one. Optional repository secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `RAILTY_SIGNING_IDENTITY`, `RAILTY_SIGNING_CERTIFICATE_B64`, `RAILTY_SIGNING_CERTIFICATE_PASSWORD`, `RAILTY_KEYCHAIN_PASSWORD` | Developer ID signing |
+| `APPLE_NOTARIZATION_ISSUER`, `APPLE_NOTARIZATION_KEY_ID`, `APPLE_NOTARIZATION_KEY` | Notarization |
+| `HOMEBREW_TAP_TOKEN` | Fine-grained PAT with write access to `vendettar/homebrew-railty`, used to update the Cask after a published release |
+
+Without `HOMEBREW_TAP_TOKEN`, update `Casks/railty.rb` in the tap manually
+using the version, URL, and SHA-256 printed in the release workflow summary.
 
 ## Configuration
 

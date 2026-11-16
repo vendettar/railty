@@ -1,0 +1,287 @@
+name: Railty Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build (vX.Y.Z). Creates a DRAFT test release."
+        required: true
+        type: string
+        default: "v0.1.0"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: railty-release
+  cancel-in-progress: false
+
+jobs:
+  build-macos:
+    name: Build Railty.app (Apple Silicon)
+    runs-on: macos-15
+    timeout-minutes: 120
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      sha256: ${{ steps.package.outputs.sha256 }}
+      published: ${{ steps.version.outputs.published }}
+      asset_url: ${{ steps.version.outputs.asset_url }}
+      signed: ${{ steps.signing_state.outputs.signed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version and release type
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            VERSION="${TAG#v}"
+            PUBLISHED=true
+          else
+            VERSION_INPUT="$INPUT_VERSION"
+            [[ "$VERSION_INPUT" == v* ]] || VERSION_INPUT="v${VERSION_INPUT}"
+            VERSION="${VERSION_INPUT#v}"
+            TAG="test-v${VERSION}"
+            PUBLISHED=false
+          fi
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            printf 'error: version must be vX.Y.Z, got: %s\n' "$VERSION" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "published=$PUBLISHED" >> "$GITHUB_OUTPUT"
+          echo "asset_url=https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/Railty-macos-arm64.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Verify macOS toolchain and architecture
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(uname -m)" == "arm64" ]] || {
+            printf 'error: this workflow builds an arm64-only artifact; runner is %s\n' "$(uname -m)" >&2
+            exit 1
+          }
+          case "$(xcode-select -p)" in
+            *.app/Contents/Developer) ;;
+            *) printf 'error: full Xcode is required (not Command Line Tools)\n' >&2; exit 1 ;;
+          esac
+          xcodebuild -version
+          echo "Building Railty $VERSION"
+
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          determinate: true
+
+      - name: Build GhosttyKit with the pinned Zig toolchain
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          nix develop -c zig build \
+            -Doptimize=ReleaseFast \
+            -Demit-macos-app=false \
+            -Dversion-string="$VERSION"
+
+      - name: Build Railty.app
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd macos
+          xcodebuild -target Ghostty -configuration Release -arch arm64 \
+            SYMROOT=build CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual
+
+      - name: Set app metadata
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="macos/build/Release/Railty.app"
+          INFO="$APP/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$INFO"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(git rev-list --count HEAD)" "$INFO"
+          /usr/libexec/PlistBuddy -c "Set :GhosttyCommit $(git rev-parse --short HEAD)" "$INFO"
+          # Sparkle points at the upstream Ghostty release server; Railty uses
+          # Homebrew/GitHub Releases instead, so disable its update checks.
+          /usr/libexec/PlistBuddy -c "Delete :SUEnableAutomaticChecks" "$INFO" || true
+          /usr/libexec/PlistBuddy -c "Delete :SUPublicEDKey" "$INFO" || true
+
+      - name: Detect signing configuration
+        id: signing_state
+        env:
+          RAILTY_SIGNING_IDENTITY: ${{ secrets.RAILTY_SIGNING_IDENTITY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "$RAILTY_SIGNING_IDENTITY" ]]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Optional Developer ID signing
+        env:
+          RAILTY_SIGNING_IDENTITY: ${{ secrets.RAILTY_SIGNING_IDENTITY }}
+          RAILTY_SIGNING_CERTIFICATE_B64: ${{ secrets.RAILTY_SIGNING_CERTIFICATE_B64 }}
+          RAILTY_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.RAILTY_SIGNING_CERTIFICATE_PASSWORD }}
+          RAILTY_KEYCHAIN_PASSWORD: ${{ secrets.RAILTY_KEYCHAIN_PASSWORD }}
+        shell: bash
+        run: bash dist/macos/sign-railty.sh macos/build/Release/Railty.app
+
+      - name: Optional notarization
+        env:
+          APPLE_NOTARIZATION_ISSUER: ${{ secrets.APPLE_NOTARIZATION_ISSUER }}
+          APPLE_NOTARIZATION_KEY_ID: ${{ secrets.APPLE_NOTARIZATION_KEY_ID }}
+          APPLE_NOTARIZATION_KEY: ${{ secrets.APPLE_NOTARIZATION_KEY }}
+        shell: bash
+        run: bash dist/macos/notarize-railty.sh macos/build/Release/Railty.app
+
+      - name: Verify app and package ZIP
+        id: package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash dist/macos/package-railty.sh \
+            macos/build/Release/Railty.app \
+            "$VERSION" \
+            Railty-macos-arm64.zip \
+            arm64
+          echo "sha256=$(cat Railty-macos-arm64.zip.sha256)" >> "$GITHUB_OUTPUT"
+
+      - name: Write release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA256: ${{ steps.package.outputs.sha256 }}
+          SIGNED: ${{ steps.signing_state.outputs.signed }}
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "Railty $VERSION for Apple Silicon (arm64)."
+            echo
+            echo "Requires macOS 13.0 or later. This is an arm64-only build; it is NOT a Universal binary."
+            echo
+            echo "SHA-256 (Railty-macos-arm64.zip): \`$SHA256\`"
+            echo
+            if [[ "$SIGNED" == "true" ]]; then
+              echo "Signed with a configured Developer ID certificate."
+            else
+              echo "> Unsigned/ad-hoc test build: no Developer ID signing or notarization credentials are configured."
+              echo "> macOS Gatekeeper may block the first launch of a manually downloaded copy."
+              echo "> Homebrew installs clear the download quarantine, but you may still need to approve the app in System Settings."
+            fi
+            if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+              echo
+              echo "This is a DRAFT release created by a manual test build."
+            fi
+          } > release-notes.md
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: railty-macos-arm64
+          path: |
+            Railty-macos-arm64.zip
+            Railty-macos-arm64.zip.sha256
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Railty ${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            Railty-macos-arm64.zip
+            Railty-macos-arm64.zip.sha256
+
+  update-homebrew-tap:
+    name: Update Homebrew tap
+    needs: build-macos
+    if: needs.build-macos.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    env:
+      TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      TAP_REPOSITORY: vendettar/homebrew-railty
+      VERSION: ${{ needs.build-macos.outputs.version }}
+      SHA256: ${{ needs.build-macos.outputs.sha256 }}
+      URL: ${{ needs.build-macos.outputs.asset_url }}
+    steps:
+      - name: Check cross-repository credentials
+        id: credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "$TAP_TOKEN" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Explain manual fallback
+        if: steps.credentials.outputs.available == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## Homebrew tap not updated automatically"
+            echo
+            echo "Set the \`HOMEBREW_TAP_TOKEN\` repository secret (fine-grained PAT with write access to \`vendettar/homebrew-railty\`) to enable automatic updates."
+            echo "Manual update for this release: version \`$VERSION\`, sha256 \`$SHA256\`, url \`$URL\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          printf '::warning::HOMEBREW_TAP_TOKEN is not configured; update the tap manually.\n'
+
+      - name: Checkout tap repository
+        if: steps.credentials.outputs.available == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.TAP_REPOSITORY }}
+          token: ${{ env.TAP_TOKEN }}
+          path: tap
+
+      - name: Checkout main repository for the update script
+        if: steps.credentials.outputs.available == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: main
+
+      - name: Update Cask and commit
+        if: steps.credentials.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 main/dist/homebrew/update_cask.py \
+            tap/Casks/railty.rb "$VERSION" "$SHA256" "$URL"
+          ruby -c tap/Casks/railty.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/railty.rb
+          if git diff --cached --quiet; then
+            echo "Tap already points at $VERSION"
+          else
+            git commit -m "railty $VERSION"
+            git push
+          fi
