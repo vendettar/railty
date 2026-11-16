@@ -97,13 +97,33 @@ jobs:
             -Demit-macos-app=false \
             -Dversion-string="$VERSION"
 
-      - name: Build Railty.app
+      - name: Detect signing configuration
+        id: signing_state
+        env:
+          RAILTY_SIGNING_IDENTITY: ${{ secrets.RAILTY_SIGNING_IDENTITY }}
         shell: bash
         run: |
           set -euo pipefail
+          if [[ -n "$RAILTY_SIGNING_IDENTITY" ]]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Railty.app
+        env:
+          SIGNED: ${{ steps.signing_state.outputs.signed }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Without a stable Developer ID team, hardened runtime library
+          # validation rejects the separately built Sparkle framework.
+          HARDENED=NO
+          [[ "$SIGNED" == "true" ]] && HARDENED=YES
           cd macos
           xcodebuild -target Ghostty -configuration Release -arch arm64 \
-            SYMROOT=build CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual
+            SYMROOT=build CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
+            ENABLE_HARDENED_RUNTIME="$HARDENED"
 
       - name: Set app metadata
         env:
@@ -120,19 +140,6 @@ jobs:
           # Homebrew/GitHub Releases instead, so disable its update checks.
           /usr/libexec/PlistBuddy -c "Delete :SUEnableAutomaticChecks" "$INFO" || true
           /usr/libexec/PlistBuddy -c "Delete :SUPublicEDKey" "$INFO" || true
-
-      - name: Detect signing configuration
-        id: signing_state
-        env:
-          RAILTY_SIGNING_IDENTITY: ${{ secrets.RAILTY_SIGNING_IDENTITY }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -n "$RAILTY_SIGNING_IDENTITY" ]]; then
-            echo "signed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Optional Developer ID signing
         env:
@@ -185,7 +192,7 @@ jobs:
               echo "Signed with a configured Developer ID certificate."
             else
               echo "> Unsigned/ad-hoc test build: no Developer ID signing or notarization credentials are configured."
-              echo "> macOS Gatekeeper may block the first launch of a manually downloaded copy."
+              echo "> Hardened Runtime is not enabled for this ad-hoc build because the separately built Sparkle framework has no matching Team ID; Gatekeeper may still block a manually downloaded copy."
               echo "> Homebrew installs clear the download quarantine, but you may still need to approve the app in System Settings."
             fi
             if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then

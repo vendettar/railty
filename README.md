@@ -45,11 +45,13 @@ You can also download `Railty-macos-arm64.zip` directly from
 - Supported macOS: 13.0 (Ventura) or later.
 - Supported CPU: Apple Silicon (arm64) only at present. The published ZIP is
   **not** a Universal binary; Intel builds are not shipped yet.
-- Signing: release builds are ad-hoc signed unless Developer ID signing and
-  notarization secrets are configured. Unsigned downloads may be blocked by
-  macOS Gatekeeper; Homebrew installs normally clear the download quarantine.
-  To approve a manually downloaded copy, use System Settings → Privacy &
-  Security, or right-click the app and choose Open.
+- Signing: release builds use a stable ad-hoc signature unless Developer ID
+  signing and notarization secrets are configured. Unsigned builds do not
+  enable Hardened Runtime, because the bundled Sparkle framework has no
+  matching Team ID. Such builds may be blocked by macOS Gatekeeper; Homebrew
+  installs normally clear the download quarantine. To approve a manually
+  downloaded copy, use System Settings → Privacy & Security, or right-click
+  the app and choose Open.
 - Coexistence: `Railty.app` uses the bundle ID `com.vendettar.railty`
   and its own Application Support directory, so it does not replace or delete
   an official `Ghostty.app`. The shared Ghostty config file
