@@ -22,20 +22,12 @@ extension Ghostty {
         case custom
         case customStyle = "custom-style"
 
-        /// Bundled asset name for built-in icons
+        /// Railty ships a single official icon. All built-in values (including
+        /// legacy upstream variants) resolve to the compiled app icon; only a
+        /// user-supplied custom icon can override it. Kept for config parsing
+        /// compatibility with upstream Ghostty values.
         var assetName: String? {
-            switch self {
-            case .official: return nil
-            case .blueprint: return "BlueprintImage"
-            case .chalkboard: return "ChalkboardImage"
-            case .microchip: return "MicrochipImage"
-            case .glass: return "GlassImage"
-            case .holographic: return "HolographicImage"
-            case .paper: return "PaperImage"
-            case .retro: return "RetroImage"
-            case .xray: return "XrayImage"
-            case .custom, .customStyle: return nil
-            }
+            nil
         }
     }
 

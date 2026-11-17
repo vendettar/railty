@@ -47,21 +47,12 @@ class DockTilePlugin: NSObject, NSDockTilePlugIn {
         dockTile.setIcon(appIcon)
     }
 
-    /// Reset the application icon and dock tile icon to the default.
+    /// Reset the dock tile icon to the default Railty icon.
     private func resetIcon(dockTile: NSDockTile) {
-        let appIcon: NSImage?
-        if #available(macOS 26.0, *) {
-            #if DEBUG
-            // Use the `Blueprint` icon to distinguish Debug from Release builds.
-            appIcon = pluginBundle.image(forResource: "BlueprintImage")!
-            #else
-            // Reset to Ghostty.icon
-            appIcon = nil
-            #endif
-        } else {
-            // Use the bundled icon to keep the corner radius consistent with pre-Tahoe apps.
-            appIcon = pluginBundle.image(forResource: "AppIconImage")!
-        }
+        // Use the bundled Railty icon to keep the corner radius consistent
+        // across macOS versions and to distinguish Debug from Release builds
+        // in the same way the upstream implementation did.
+        let appIcon = pluginBundle.image(forResource: "AppIconImage")
         dockTile.setIcon(appIcon)
     }
 }

@@ -56,6 +56,11 @@ You can also download `Railty-macos-arm64.zip` directly from
   and its own Application Support directory, so it does not replace or delete
   an official `Ghostty.app`. The shared Ghostty config file
   (`~/.config/ghostty/config.ghostty`) is still read.
+- App icon: Railty ships a single original icon (see [`branding/`](branding/))
+  used in Finder, the Dock, Launchpad, the app switcher, and About. The upstream
+  Ghostty icon variants and custom-style layers are not distributed. Legacy
+  `macos-icon` values from upstream configs are still accepted but fall back to
+  the Railty icon; `macos-icon = custom` with `macos-custom-icon` still works.
 
 To build from source instead, see [HACKING.md](HACKING.md); the pinned Zig
 version is declared in [`build.zig.zon`](build.zig.zon). Building the macOS app

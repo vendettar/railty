@@ -57,6 +57,23 @@ case "$EXPECTED_ARCH" in
   *) die "unknown expected architecture: $EXPECTED_ARCH" ;;
 esac
 
+# Verify the app icon is the Railty asset catalog icon and that no upstream
+# Ghostty icon assets are shipped in the bundle.
+ICON_NAME="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIconName" "$INFO_PLIST" 2>/dev/null || printf '')"
+if [[ -n "$ICON_NAME" ]]; then
+  [[ "$ICON_NAME" == "AppIcon" ]] ||
+    die "unexpected CFBundleIconName: $ICON_NAME (expected AppIcon)"
+fi
+RESOURCES_DIR="$APP_PATH/Contents/Resources"
+[[ -f "$RESOURCES_DIR/Assets.car" ]] || die "compiled asset catalog not found"
+[[ ! -e "$RESOURCES_DIR/Ghostty.icns" ]] ||
+  die "upstream Ghostty.icns is still shipped in the app bundle"
+# Modern Xcode may store the compiled icon only in Assets.car, so the
+# presence of a standalone AppIcon.icns is informational, not required.
+if [[ -e "$RESOURCES_DIR/AppIcon.icns" ]]; then
+  printf 'Verified Railty app icon asset: AppIcon.icns\n'
+fi
+
 printf 'Verified %s: bundle id=%s version=%s archs=%s\n' \
   "$APP_PATH" "$BUNDLE_ID" "$APP_VERSION" "$ACTUAL_ARCHS"
 

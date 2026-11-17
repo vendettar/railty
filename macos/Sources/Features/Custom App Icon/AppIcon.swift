@@ -1,7 +1,7 @@
 import AppKit
 import System
 
-/// The icon style for the Ghostty App.
+/// The icon style for the Railty app.
 enum AppIcon: Equatable, Codable, Sendable {
     case official
     case blueprint
@@ -14,29 +14,17 @@ enum AppIcon: Equatable, Codable, Sendable {
     case xray
     /// Save full image data to avoid sandboxing issues
     case custom(_ iconFile: Data)
-    case customStyle(_ icon: ColorizedGhosttyIcon)
 
 #if !DOCK_TILE_PLUGIN
     init?(config: Ghostty.Config) {
         switch config.macosIcon {
         case .official:
             return nil
-        case .blueprint:
-            self = .blueprint
-        case .chalkboard:
-            self = .chalkboard
-        case .glass:
-            self = .glass
-        case .holographic:
-            self = .holographic
-        case .microchip:
-            self = .microchip
-        case .paper:
-            self = .paper
-        case .retro:
-            self = .retro
-        case .xray:
-            self = .xray
+        case .blueprint, .chalkboard, .glass, .holographic, .microchip,
+             .paper, .retro, .xray:
+            // Railty ships a single official icon. Legacy variant values are
+            // accepted for config compatibility but use the bundled icon.
+            return nil
         case .custom:
             if let data = try? Data(contentsOf: URL(filePath: config.macosCustomIcon, relativeTo: nil)) {
                 self = .custom(data)
@@ -44,43 +32,22 @@ enum AppIcon: Equatable, Codable, Sendable {
                 return nil
             }
         case .customStyle:
-            // Discard saved icon name
-            // if no valid colours were found
-            guard
-                let ghostColor = config.macosIconGhostColor,
-                let screenColors = config.macosIconScreenColor
-            else {
-                return nil
-            }
-            self = .customStyle(ColorizedGhosttyIcon(screenColors: screenColors, ghostColor: ghostColor, frame: config.macosIconFrame))
+            // Ghostty's layer assets are not shipped with Railty; fall back
+            // to the bundled Railty icon for this legacy config value.
+            return nil
         }
     }
 #endif
 
     func image(in bundle: Bundle) -> NSImage? {
         switch self {
-        case .official:
+        case .official, .blueprint, .chalkboard, .glass, .holographic,
+             .microchip, .paper, .retro, .xray:
+            // Built-in variants and custom-style are not bundled; nil lets
+            // NSWorkspace/Dock fall back to the compiled Railty app icon.
             return nil
-        case .blueprint:
-            return bundle.image(forResource: "BlueprintImage")!
-        case .chalkboard:
-            return bundle.image(forResource: "ChalkboardImage")!
-        case .glass:
-            return bundle.image(forResource: "GlassImage")!
-        case .holographic:
-            return bundle.image(forResource: "HolographicImage")!
-        case .microchip:
-            return bundle.image(forResource: "MicrochipImage")!
-        case .paper:
-            return bundle.image(forResource: "PaperImage")!
-        case .retro:
-            return bundle.image(forResource: "RetroImage")!
-        case .xray:
-            return bundle.image(forResource: "XrayImage")!
         case let .custom(file):
             return NSImage(data: file)
-        case let .customStyle(customIcon):
-            return customIcon.makeImage(in: bundle)
         }
     }
 }
