@@ -2247,6 +2247,24 @@ test "window_add queues list_windows when queue empty" {
     });
 }
 
+test "list-windows parse failure frees parsed layouts" {
+    var viewer = try Viewer.init(testing.io, testing.allocator);
+    defer viewer.deinit();
+
+    var actions: std.ArrayList(Viewer.Action) = .empty;
+    defer actions.deinit(testing.allocator);
+
+    // The first line parses and allocates a layout arena; the second line
+    // fails. The errdefer path must free the first window's arena; the
+    // testing allocator fails the test on a leak.
+    const content =
+        "$0 @1 80 24 80x24,0,0{40x24,0,0,0,39x24,41,0,1}\n" ++
+        "$0 @2 80 24 not-a-layout";
+    if (viewer.receivedListWindows(testing.allocator, &actions, content)) |_| {
+        return error.TestUnexpectedResult;
+    } else |_| {}
+}
+
 test "window_add queues list_windows when queue not empty" {
     var viewer = try Viewer.init(testing.io, testing.allocator);
     defer viewer.deinit();
