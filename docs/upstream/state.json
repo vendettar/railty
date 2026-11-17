@@ -4,11 +4,11 @@
   "updated_at": "2026-11-17",
   "last_full_sync_date": null,
   "railty": {
-    "head_sha": "be61dbaeb1918c4e847b0fb7e2fbd0b93c0dd3c0",
+    "head_sha": "6016fb005881905b3807af45b23ee778dd2122f5",
     "latest_release_tag": "v0.1.4",
     "pinned_zig_version": "0.17.0",
-    "last_validated_commit": "be61dbaeb1918c4e847b0fb7e2fbd0b93c0dd3c0",
-    "last_validation_scope": "xcode-27 Railty Release arm64 builds: run 44042567498 (45 upstream fixes, success), run 44050630021 (v0.1.3 published), run 44053591222 (v0.1.4 published); zig build test-lib-vt (full), zig test src/os/path.zig (4/4), zig fmt --check build.zig src/, swiftc -parse on modified .swift, xmllint on modified .xib",
+    "last_validated_commit": "6016fb005881905b3807af45b23ee778dd2122f5",
+    "last_validation_scope": "local Xcode 27.2: zig build test -Dtest-filter=PageList passed, ghostty-bench measured 1.65-1.71x for line-limited scrollback (RSS flat); xcode-27 arm64 build run 44075475339 validated the same PageList code; CI runs Python sync tests",
     "sync_branch": null
   },
   "upstreams": {
@@ -51,27 +51,27 @@
     "file": "docs/upstream/ledger.jsonl",
     "total_entries": 395,
     "by_decision": {
-      "INCLUDE": 45,
-      "DEFER": 149,
+      "INCLUDE": 46,
+      "DEFER": 148,
       "SKIP": 201,
       "ALREADY_INCLUDED": 0,
       "NEEDS_REVIEW": 0
     },
     "by_integration": {
       "pending": 0,
-      "deferred": 149,
+      "deferred": 148,
       "not-applicable": 201,
       "integrated": 44,
-      "adapted": 1,
+      "adapted": 2,
       "rejected": 0
     }
   },
   "deferred_review": {
     "queue_file": "docs/upstream/defer-queue.json",
     "last_reviewed_at": "2026-11-17",
-    "total": 149,
+    "total": 148,
     "by_priority": {
-      "P1": 14,
+      "P1": 13,
       "P2": 32,
       "P3": 103
     },
@@ -81,7 +81,7 @@
       "awaiting_validation": 23,
       "awaiting_toolchain": 4,
       "no_runtime_path": 1,
-      "candidate_next_batch": 2
+      "candidate_next_batch": 1
     },
     "satisfied_triggers": 0,
     "report": "docs/upstream/reviews/2026-11-17-deferred-review.md",
@@ -91,25 +91,23 @@
     "experiment_ci_result": "success",
     "experiment_validation": "lib-vt tests passed, macOS arm64 build passed, performance NOT_TESTED",
     "experiment_merged": false,
-    "prune_memory_experiment": {
+    "prune_memory_merge": {
       "upstream_sha": "d0addb9cdf9a30901bd953421dccada3bf610d7c",
       "branch": "sync/ghostty-pagelist-prune-memory",
-      "commit": "04c6deea1",
+      "commit": "6016fb005881905b3807af45b23ee778dd2122f5",
       "ci_run": 44075475339,
       "ci_result": "success",
       "validation": "PageList tests passed, macOS arm64 build passed, measured 1.65x (1,000 lines) / 1.71x (10,000 lines) on M4 Pro; RSS 11.06 -> 10.90 MB",
-      "merged": false,
+      "merged": true,
       "benchmark_report": "docs/upstream/benchmarks/2026-11-17-baseline.md"
     }
   },
   "active_task": {
     "status": "completed",
     "branch": "main",
-    "description": "Upstream Sync v1.2 Lite + local Xcode validation: CI runs the sync Python tests; prune-memory fix measured at 1.65-1.71x for line-limited scrollback with no RSS increase. Merge decision pending.",
-    "next_recommended_branch": "sync/ghostty-pagelist-prune-memory",
-    "remaining_priority_groups": [
-      "merge sync/ghostty-pagelist-prune-memory"
-    ]
+    "description": "Upstream Sync v1.2 Lite complete: prune-memory fix merged after local measurement (1.65-1.71x line-limited throughput, RSS flat); benchmark options and CI Python tests in place. History squashed; force-publish pending user action.",
+    "next_recommended_branch": null,
+    "remaining_priority_groups": []
   },
   "pending_review_ranges": [],
   "notes": [

@@ -67,7 +67,7 @@ Regression coverage reuses existing tests: `PageList set max lines prunes immedi
 
 ## 5. Recommendation
 
-- **Recommend merging** `04c6deea1` into `main`. It is a 43/17-line change in one file, has targeted tests plus a successful macOS arm64 build, and now has a measured 1.65–1.71x throughput win for line-limited scrollback with no RSS increase.
+- **Merged** into `main` as `6016fb005` after the local measurement above. It is a 43/17-line change in one file with targeted tests, a successful macOS arm64 build, and a measured 1.65–1.71x throughput win for line-limited scrollback with no RSS increase.
 - The gain is limited to users who set a line-based scrollback limit; default byte-limited users see no regression (1.04x within noise).
-- The branch also carries two benchmark-only commits (`93397f909`, `97444fd04`) needed to reproduce the numbers; they can be merged with it or skipped, but without them `+terminal-stream` cannot configure line/byte limits.
+- Benchmark-only commits `9b82ca8e1` and `ce4c2d165` are on `main` so the measurement can be reproduced.
 - No Sidegeist, branding, CI/CD, or build-system changes are involved.

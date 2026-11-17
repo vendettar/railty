@@ -1601,18 +1601,6 @@
     },
     {
       "source": "ghostty",
-      "sha": "d0addb9cdf9a30901bd953421dccada3bf610d7c",
-      "topic": "terminal-core-resize-render",
-      "group": "terminal-pagelist-prune-memory",
-      "priority": "P1",
-      "revisit_trigger": "manual_dedicated_port",
-      "validation_plan": "Port with PageList prune tests; run grow/prune resize tests and lib-vt suite; macOS arm64 build",
-      "review_status": "candidate_next_batch",
-      "last_reassessed_at": "2026-11-17",
-      "notes": "问题在 Railty 成立。实验分支 sync/ghostty-pagelist-prune-memory（04c6deea1）已完成适配；Zig 测试与 macOS 构建通过；本机 M4 Pro 实测 1,000 行 674→1,115 MB/s（1.65x）、10,000 行 729→1,244 MB/s（1.71x），RSS 11.06→10.90 MB。建议合并。"
-    },
-    {
-      "source": "ghostty",
       "sha": "9b848b0f5c1f5e18611d89a570540df9ad2333d1",
       "topic": "libghostty-vt-and-deps",
       "group": "snapshot-page-capacity",
