@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1254 1254" fill="none">
+  <title>Railty — R icon</title>
+  <desc>Flat turquoise double-rail R monogram incorporating a terminal prompt.</desc>
+  <!-- Transparent canvas outside the rounded macOS icon background. -->
+  <path id="background" fill="#030A1B" d="M330 42 H924 C1089 42 1211 161 1211 325 V929 C1211 1093 1091 1212 925 1212 H330 C163 1212 36 1093 36 928 V326 C36 161 162 42 330 42 Z"/>
+  <g id="railty-mark" fill="#02EED1">
+    <!-- Outer rail and the two angled strokes of the R: a single closed silhouette. -->
+    <path id="outer-rail" d="M325 292 H716 C835 292 930 392 930 517 C930 622 861 709 742 741 L931 960 H873 L684 744 H627 L815 960 H756 L566 744 H491 V701 H717 C810 701 883 620 883 518 C883 416 810 336 716 336 H325 Z"/>
+    <!-- Inner rail flows into the right upright; adjacent edges do not overlap. -->
+    <path id="inner-rail" d="M325 374 H708 C785 374 842 438 842 516 C842 600 780 661 704 661 H455 V960 H410 L408 458 H452 V618 H714 C758 618 794 572 794 517 C794 461 753 418 698 418 H325 Z"/>
+    <!-- Left parallel upright -->
+    <path id="left-upright" d="M325 458 H369 V960 H325 Z"/>
+    <!-- Terminal chevron and underscore -->
+    <path id="terminal-prompt" d="M509 465 V490 L547 514 L509 538 V563 L578 521 V508 Z"/>
+    <path id="terminal-cursor" d="M591 542 H672 V563 H591 Z"/>
+  </g>
+</svg>
