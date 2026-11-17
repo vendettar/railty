@@ -1,5 +1,7 @@
 # Railty Upstream Initial Baseline Audit (2026-11-17)
 
+> **历史快照（已归档）**：本报告保留初次审查时的原始结论，其中的"尚未向 Railty `main` 合并或 Cherry-pick 任何上游代码（Integrated = 0）"仅描述当时状态，**现已失效**。全部 45 项 `INCLUDE` 已完成移植、验证并发布。当前权威状态请阅读 [2026-11-17-integration-complete.md](2026-11-17-integration-complete.md)、[state.json](../state.json) 与 [ledger.jsonl](../ledger.jsonl)。**请勿按本报告第 6 节重复移植。**
+
 本报告基于本地 Git 真实历史、`git show` 实际 diff 与逐条台账 [ledger.jsonl](../ledger.jsonl) 生成，记录 Railty 双上游同步机制建立时的首次完整基线审计结果。
 
 > **状态声明**：本次任务完成了基线验证、制度建设及全部 395 个 Ghostty post-`v1.4.0` 提交的**逐条审查（Reviewed）**，按 **PR、功能主题（`topic`）与依赖链（`dependencies`）** 完成聚合，同时在 [ledger.jsonl](../ledger.jsonl) 中为每个 Commit 保留了独立追踪记录。**尚未向 Railty `main` 合并或 Cherry-pick 任何上游代码（Integrated = 0）**，后续 Worker 只需从 `5ebe501a63425b13d9952e8c54682c046386e5af` 之后增量审查。
@@ -168,6 +170,8 @@
 ---
 
 ## 6. 下一位 Worker 行动起点（增量审查机制已就绪）
+
+> **已过时**：本节写于移植之前。45 项 `INCLUDE` 已全部合入 `main`，请直接按 [集成完成报告](2026-11-17-integration-complete.md) 的"下一步"执行，不要重新移植本报告第 4 节列出的提交。
 
 - 已完成 `v1.4.0..5ebe501a63` 全量 395 个提交的基线审计与台账持久化，后续 Worker **无需重审这 395 个提交**。
 - 下次只需执行 `./tools/upstream/check.sh`，即可自动列出 `5ebe501a63425b13d9952e8c54682c046386e5af` 之后新增的增量提交。
