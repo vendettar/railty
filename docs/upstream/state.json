@@ -8,7 +8,7 @@
     "latest_release_tag": "v0.1.2",
     "pinned_zig_version": "0.17.0",
     "last_validated_commit": "e16eedc09ced76d1694a47bc89bd8b314f3f2d32",
-    "last_validation_scope": "partial: zig build test-lib-vt (-Dtest-filter=terminal/datastruct/simd/kitty), zig test src/os/path.zig (4/4), zig fmt --check build.zig src/, swiftc -parse on modified .swift, git diff --check main..HEAD; full zig build test & xcodebuild blocked (Xcode.app / Metal toolchain unavailable locally)",
+    "last_validation_scope": "partial: zig build test-lib-vt (full suite passed), zig test src/os/path.zig (4/4), zig fmt --check build.zig src/, swiftc -parse on modified .swift, git diff --check main..HEAD; full zig build test & xcodebuild pending xcode-27 runner validation (Xcode.app / Metal toolchain unavailable locally)",
     "sync_branch": "sync/ghostty-fixes-2026-11"
   },
   "upstreams": {
