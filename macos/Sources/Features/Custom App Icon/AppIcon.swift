@@ -4,36 +4,22 @@ import System
 /// The icon style for the Railty app.
 enum AppIcon: Equatable, Codable, Sendable {
     case official
-    case blueprint
-    case chalkboard
-    case glass
-    case holographic
-    case microchip
-    case paper
-    case retro
-    case xray
     /// Save full image data to avoid sandboxing issues
     case custom(_ iconFile: Data)
 
 #if !DOCK_TILE_PLUGIN
     init?(config: Ghostty.Config) {
         switch config.macosIcon {
-        case .official:
-            return nil
-        case .blueprint, .chalkboard, .glass, .holographic, .microchip,
-             .paper, .retro, .xray:
-            // Railty ships a single official icon. Legacy variant values are
-            // accepted for config compatibility but use the bundled icon.
-            return nil
         case .custom:
             if let data = try? Data(contentsOf: URL(filePath: config.macosCustomIcon, relativeTo: nil)) {
                 self = .custom(data)
             } else {
                 return nil
             }
-        case .customStyle:
-            // Ghostty's layer assets are not shipped with Railty; fall back
-            // to the bundled Railty icon for this legacy config value.
+        default:
+            // Railty ships one compiled app icon. Every other `macos-icon`
+            // value (official and legacy upstream values accepted by the
+            // config parser) resolves to that bundled icon.
             return nil
         }
     }
@@ -41,10 +27,8 @@ enum AppIcon: Equatable, Codable, Sendable {
 
     func image(in bundle: Bundle) -> NSImage? {
         switch self {
-        case .official, .blueprint, .chalkboard, .glass, .holographic,
-             .microchip, .paper, .retro, .xray:
-            // Built-in variants and custom-style are not bundled; nil lets
-            // NSWorkspace/Dock fall back to the compiled Railty app icon.
+        case .official:
+            // nil lets NSWorkspace/Dock fall back to the compiled Railty icon.
             return nil
         case let .custom(file):
             return NSImage(data: file)

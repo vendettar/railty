@@ -77,9 +77,15 @@ fi
 printf 'Verified %s: bundle id=%s version=%s archs=%s\n' \
   "$APP_PATH" "$BUNDLE_ID" "$APP_VERSION" "$ACTUAL_ARCHS"
 
+# Every release build is signed: sign-railty.sh applies a Developer ID
+# signature when configured, otherwise a consistent ad-hoc signature. Both
+# are valid signatures and both must verify. A verification failure here is a
+# real packaging defect (corrupt or incomplete signing), not an expected
+# "unsigned" state, so it must block the release rather than warn.
 if ! /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_PATH" >/dev/null 2>&1; then
-  printf 'warning: signature verification failed (expected for unsigned/ad-hoc test builds)\n' >&2
+  die "code signature verification failed for $APP_PATH (refusing to package)"
 fi
+printf 'Verified code signature on %s\n' "$APP_PATH"
 
 rm -f "$OUTPUT_ZIP" "$OUTPUT_ZIP.sha256"
 /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$OUTPUT_ZIP"

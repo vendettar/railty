@@ -3,27 +3,41 @@ name: Railty Release
 on:
   push:
     tags:
-      - "v*"
+      - "v[0-9]*.[0-9]*.[0-9]*"
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to build (vX.Y.Z). Creates a DRAFT test release."
+        description: "Version to build (vX.Y.Z) for manual test verification."
         required: true
         type: string
         default: "v0.1.0"
+      create_draft_release:
+        description: "Create a DRAFT GitHub Release (off by default; uploads workflow artifact only)."
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 concurrency:
-  group: railty-release
+  # Official (tag push) releases share one group so two versions can never
+  # publish at once and race on the Homebrew Cask. Manual test builds get a
+  # per-ref group so they neither block nor cancel a real release.
+  # GitHub Actions concurrency is not FIFO; update_cask.py enforces the actual
+  # version ordering at the point of writing the Cask.
+  group: ${{ github.event_name == 'push' && 'railty-release-official' || format('railty-release-test-{0}', github.ref) }}
   cancel-in-progress: false
+
+env:
+  ZIG_VERSION: "0.17.0"
+  ZIG_MACOS_ARM64_SHA256: "b607e9b9234790a008116ae5bdb71c6243b84b9fb42a53a9e70fde41c06c536a"
 
 jobs:
   build-macos:
     name: Build Railty.app (Apple Silicon)
-    runs-on: macos-15
-    timeout-minutes: 120
+    runs-on: xcode-27
+    timeout-minutes: 90
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
@@ -32,16 +46,22 @@ jobs:
       asset_url: ${{ steps.version.outputs.asset_url }}
       signed: ${{ steps.signing_state.outputs.signed }}
     steps:
+      - name: Record job start time
+        id: timing_start
+        shell: bash
+        run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - name: Resolve version and release type
+      - name: Resolve version and release guard
         id: version
         env:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -56,10 +76,40 @@ jobs:
             TAG="test-v${VERSION}"
             PUBLISHED=false
           fi
+
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             printf 'error: version must be vX.Y.Z, got: %s\n' "$VERSION" >&2
             exit 1
           fi
+
+          if [[ "$PUBLISHED" == "true" ]]; then
+            # Verify the tag still points at the commit GitHub checked out.
+            # A moved tag must never publish as if it were the original build.
+            TAG_REF="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" 2>/dev/null || true)"
+            TAG_SHA="$(printf '%s' "$TAG_REF" | jq -r '.object.sha // empty')"
+            if [[ "$(printf '%s' "$TAG_REF" | jq -r '.object.type // empty')" == "tag" ]]; then
+              TAG_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_SHA" --jq '.object.sha' 2>/dev/null || true)"
+            fi
+            if [[ -n "$TAG_SHA" && "$TAG_SHA" != "$GITHUB_SHA" ]]; then
+              printf '::error::Tag %s points at %s but this run builds %s; refusing a moved tag.\n' \
+                "$TAG" "${TAG_SHA:0:9}" "${GITHUB_SHA:0:9}" >&2
+              exit 1
+            fi
+
+            # Any existing official Release is immutable: stop early so a
+            # repeated or stale trigger cannot overwrite assets. If it exists
+            # with missing assets, report that explicitly instead of silently
+            # rebuilding a partial Release.
+            if EXISTING="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --json isDraft,assets 2>/dev/null)"; then
+              IS_DRAFT="$(printf '%s' "$EXISTING" | jq -r '.isDraft')"
+              ASSETS="$(printf '%s' "$EXISTING" | jq -r '[.assets[].name] | join(", ")')"
+              printf '::error::Official release %s already exists (draft=%s, assets=[%s]); refusing to overwrite or partially rebuild it.\n' \
+                "$TAG" "$IS_DRAFT" "$ASSETS" >&2
+              exit 1
+            fi
+          fi
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "published=$PUBLISHED" >> "$GITHUB_OUTPUT"
@@ -82,20 +132,99 @@ jobs:
           xcodebuild -version
           echo "Building Railty $VERSION"
 
-      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Cache pinned Zig toolchain binary
+        id: zig_bin_cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          determinate: true
+          path: ${{ runner.temp }}/zig-${{ env.ZIG_VERSION }}
+          key: zig-bin-${{ runner.os }}-${{ runner.arch }}-${{ env.ZIG_VERSION }}-${{ env.ZIG_MACOS_ARM64_SHA256 }}
 
-      - name: Build GhosttyKit with the pinned Zig toolchain
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
+      - name: Setup pinned Zig toolchain and build dependencies
+        id: env_setup
         shell: bash
         run: |
           set -euo pipefail
-          nix develop -c zig build \
+          ZIG_DIR="${RUNNER_TEMP}/zig-${ZIG_VERSION}"
+          if [[ ! -x "${ZIG_DIR}/zig" ]]; then
+            mkdir -p "${ZIG_DIR}"
+            TARBALL="${RUNNER_TEMP}/zig-${ZIG_VERSION}.tar.xz"
+            curl -fsSL --retry 3 --retry-delay 3 \
+              "https://ziglang.org/download/${ZIG_VERSION}/zig-aarch64-macos-${ZIG_VERSION}.tar.xz" \
+              -o "$TARBALL"
+            ACTUAL_SHA="$(/usr/bin/shasum -a 256 "$TARBALL" | /usr/bin/awk '{print $1}')"
+            if [[ "$ACTUAL_SHA" != "$ZIG_MACOS_ARM64_SHA256" ]]; then
+              printf 'error: Zig tarball SHA-256 mismatch: expected %s, got %s\n' \
+                "$ZIG_MACOS_ARM64_SHA256" "$ACTUAL_SHA" >&2
+              exit 1
+            fi
+            tar -xJf "$TARBALL" -C "${ZIG_DIR}" --strip-components=1
+            rm -f "$TARBALL"
+          fi
+          echo "${ZIG_DIR}" >> "$GITHUB_PATH"
+
+          # Homebrew gettext is keg-only on macOS; expose it if installed.
+          if [[ -d "/opt/homebrew/opt/gettext/bin" ]]; then
+            export PATH="/opt/homebrew/opt/gettext/bin:$PATH"
+          fi
+
+          MISSING_BREW=()
+          command -v msgfmt >/dev/null 2>&1 || MISSING_BREW+=("gettext")
+          command -v pandoc >/dev/null 2>&1 || MISSING_BREW+=("pandoc")
+          if (( ${#MISSING_BREW[@]} > 0 )); then
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install "${MISSING_BREW[@]}"
+          fi
+          if [[ -d "/opt/homebrew/opt/gettext/bin" ]]; then
+            echo "/opt/homebrew/opt/gettext/bin" >> "$GITHUB_PATH"
+            export PATH="/opt/homebrew/opt/gettext/bin:$PATH"
+          fi
+
+          ACTUAL_ZIG="$("${ZIG_DIR}/zig" version)"
+          [[ "$ACTUAL_ZIG" == "$ZIG_VERSION" ]] || {
+            printf 'error: expected zig %s, got %s\n' "$ZIG_VERSION" "$ACTUAL_ZIG" >&2
+            exit 1
+          }
+          msgfmt --version | head -n 1
+          pandoc --version | head -n 1
+          echo "end=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Zig global build cache
+        id: zig_build_cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/zig-global-cache
+          key: zig-cache-${{ runner.os }}-${{ runner.arch }}-${{ env.ZIG_VERSION }}-native-ReleaseFast-${{ hashFiles('build.zig.zon') }}-${{ github.sha }}
+          restore-keys: |
+            zig-cache-${{ runner.os }}-${{ runner.arch }}-${{ env.ZIG_VERSION }}-native-ReleaseFast-${{ hashFiles('build.zig.zon') }}-
+
+      - name: Build GhosttyKit (arm64 native)
+        id: ghosttykit
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-global-cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          T0=$(date +%s)
+          mkdir -p "$ZIG_GLOBAL_CACHE_DIR"
+          zig build \
             -Doptimize=ReleaseFast \
             -Demit-macos-app=false \
+            -Dxcframework-target=native \
             -Dversion-string="$VERSION"
+          [[ -d "macos/GhosttyKit.xcframework" ]] || {
+            printf 'error: macos/GhosttyKit.xcframework was not generated\n' >&2
+            exit 1
+          }
+          T1=$(date +%s)
+          echo "start=$T0" >> "$GITHUB_OUTPUT"
+          echo "end=$T1" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Swift Package dependencies
+        id: spm_cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: macos/.spm-cache
+          key: spm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('macos/Ghostty.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
 
       - name: Detect signing configuration
         id: signing_state
@@ -111,19 +240,30 @@ jobs:
           fi
 
       - name: Build Railty.app
+        id: xcode
         env:
           SIGNED: ${{ steps.signing_state.outputs.signed }}
         shell: bash
         run: |
           set -euo pipefail
+          T0=$(date +%s)
           # Without a stable Developer ID team, hardened runtime library
           # validation rejects the separately built Sparkle framework.
           HARDENED=NO
           [[ "$SIGNED" == "true" ]] && HARDENED=YES
           cd macos
           xcodebuild -target Ghostty -configuration Release -arch arm64 \
+            -clonedSourcePackagesDirPath "${GITHUB_WORKSPACE}/macos/.spm-cache" \
             SYMROOT=build CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
             ENABLE_HARDENED_RUNTIME="$HARDENED"
+          T1=$(date +%s)
+          echo "start=$T0" >> "$GITHUB_OUTPUT"
+          echo "end=$T1" >> "$GITHUB_OUTPUT"
+
+      - name: Record packaging start time
+        id: pkg_timing_start
+        shell: bash
+        run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
 
       - name: Set app metadata
         env:
@@ -171,6 +311,7 @@ jobs:
             Railty-macos-arm64.zip \
             arm64
           echo "sha256=$(cat Railty-macos-arm64.zip.sha256)" >> "$GITHUB_OUTPUT"
+          echo "end=$(date +%s)" >> "$GITHUB_OUTPUT"
 
       - name: Write release notes
         env:
@@ -208,9 +349,11 @@ jobs:
           path: |
             Railty-macos-arm64.zip
             Railty-macos-arm64.zip.sha256
+          retention-days: 14
           if-no-files-found: error
 
       - name: Create GitHub Release
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.create_draft_release)
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -224,13 +367,73 @@ jobs:
             Railty-macos-arm64.zip
             Railty-macos-arm64.zip.sha256
 
+      - name: Publish build performance summary
+        if: always()
+        env:
+          T_JOB_START: ${{ steps.timing_start.outputs.start }}
+          T_ENV_END: ${{ steps.env_setup.outputs.end }}
+          T_GK_START: ${{ steps.ghosttykit.outputs.start }}
+          T_GK_END: ${{ steps.ghosttykit.outputs.end }}
+          T_XC_START: ${{ steps.xcode.outputs.start }}
+          T_XC_END: ${{ steps.xcode.outputs.end }}
+          T_PKG_START: ${{ steps.pkg_timing_start.outputs.start }}
+          T_PKG_END: ${{ steps.package.outputs.end }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PUBLISHED: ${{ steps.version.outputs.published }}
+          SHA256: ${{ steps.package.outputs.sha256 }}
+          ZIG_CACHE_HIT: ${{ steps.zig_build_cache.outputs.cache-hit }}
+          SPM_CACHE_HIT: ${{ steps.spm_cache.outputs.cache-hit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          T_END=$(date +%s)
+          fmt_dur() {
+            local s="$1" e="$2"
+            if [[ -z "$s" || -z "$e" ]]; then
+              echo "n/a"
+              return
+            fi
+            local d=$((e - s))
+            if (( d < 0 )); then d=0; fi
+            if (( d >= 60 )); then
+              printf '%dm %02ds' $((d / 60)) $((d % 60))
+            else
+              printf '%ds' "$d"
+            fi
+          }
+
+          ENV_DUR=$(fmt_dur "$T_JOB_START" "$T_ENV_END")
+          GK_DUR=$(fmt_dur "$T_GK_START" "$T_GK_END")
+          XC_DUR=$(fmt_dur "$T_XC_START" "$T_XC_END")
+          PKG_DUR=$(fmt_dur "$T_PKG_START" "$T_PKG_END")
+          REL_DUR=$(fmt_dur "$T_PKG_END" "$T_END")
+          TOT_DUR=$(fmt_dur "$T_JOB_START" "$T_END")
+
+          {
+            echo "### Railty Build Summary"
+            echo
+            echo '```text'
+            echo "Platform:     macOS arm64 (native)"
+            echo "Version:      v${VERSION:-unknown} (tag: ${TAG:-unknown}, published: ${PUBLISHED:-false})"
+            echo "Environment:  ${ENV_DUR}"
+            echo "GhosttyKit:   ${GK_DUR} (zig cache hit: ${ZIG_CACHE_HIT:-false})"
+            echo "Xcode Build:  ${XC_DUR} (spm cache hit: ${SPM_CACHE_HIT:-false})"
+            echo "Packaging:    ${PKG_DUR}"
+            echo "Release:      ${REL_DUR}"
+            echo "Total:        ${TOT_DUR}"
+            if [[ -n "$SHA256" ]]; then
+              echo "SHA-256:      ${SHA256}"
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   update-homebrew-tap:
     name: Update Homebrew tap
     needs: build-macos
-    if: needs.build-macos.outputs.published == 'true'
+    if: github.event_name == 'push' && needs.build-macos.outputs.published == 'true'
     runs-on: ubuntu-latest
     env:
-      TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
       TAP_REPOSITORY: vendettar/homebrew-railty
       VERSION: ${{ needs.build-macos.outputs.version }}
       SHA256: ${{ needs.build-macos.outputs.sha256 }}
@@ -241,54 +444,118 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "$TAP_TOKEN" ]]; then
+          T_START=$(date +%s)
+          echo "start=$T_START" >> "$GITHUB_OUTPUT"
+          if [[ -n "${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}" ]]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Explain manual fallback
+      - name: Fail clearly when HOMEBREW_TAP_DEPLOY_KEY is missing
         if: steps.credentials.outputs.available == 'false'
         shell: bash
         run: |
           set -euo pipefail
           {
-            echo "## Homebrew tap not updated automatically"
+            echo "### Homebrew Tap Sync: NOT SYNCED"
             echo
-            echo "Set the \`HOMEBREW_TAP_TOKEN\` repository secret (fine-grained PAT with write access to \`vendettar/homebrew-railty\`) to enable automatic updates."
-            echo "Manual update for this release: version \`$VERSION\`, sha256 \`$SHA256\`, url \`$URL\`."
+            echo "- **Reason**: \`HOMEBREW_TAP_DEPLOY_KEY\` secret is not configured in \`${GITHUB_REPOSITORY}\`."
+            echo "- **Action required**: Install a write-capable deploy key on \`${TAP_REPOSITORY}\`, save its private key as \`HOMEBREW_TAP_DEPLOY_KEY\`, or update \`Casks/railty.rb\` manually:"
+            echo "  - \`version\`: \`$VERSION\`"
+            echo "  - \`sha256\`: \`$SHA256\`"
+            echo "  - \`url\`: \`$URL\`"
           } >> "$GITHUB_STEP_SUMMARY"
-          printf '::warning::HOMEBREW_TAP_TOKEN is not configured; update the tap manually.\n'
+          printf '::error::HOMEBREW_TAP_DEPLOY_KEY is not configured; Homebrew tap (%s) was NOT updated for v%s.\n' \
+            "$TAP_REPOSITORY" "$VERSION" >&2
+          exit 1
+
+      - name: Verify published Release asset URL and SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP_TMP="${RUNNER_TEMP}/Railty-macos-arm64.zip"
+          if ! curl -fsSL --retry 5 --retry-delay 3 "$URL" -o "$ZIP_TMP"; then
+            printf '::error::Published release asset is not downloadable at %s\n' "$URL" >&2
+            exit 1
+          fi
+          ACTUAL_SHA256="$(sha256sum "$ZIP_TMP" | awk '{print $1}')"
+          rm -f "$ZIP_TMP"
+          if [[ "$ACTUAL_SHA256" != "$SHA256" ]]; then
+            printf '::error::Downloaded asset SHA-256 (%s) does not match build SHA-256 (%s)\n' \
+              "$ACTUAL_SHA256" "$SHA256" >&2
+            exit 1
+          fi
+          echo "Verified Release asset URL and SHA-256: $ACTUAL_SHA256"
 
       - name: Checkout tap repository
-        if: steps.credentials.outputs.available == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ env.TAP_REPOSITORY }}
-          token: ${{ env.TAP_TOKEN }}
+          ssh-key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
           path: tap
 
       - name: Checkout main repository for the update script
-        if: steps.credentials.outputs.available == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: main
 
-      - name: Update Cask and commit
-        if: steps.credentials.outputs.available == 'true'
+      - name: Update Cask, verify syntax, and push
+        env:
+          T_START: ${{ steps.credentials.outputs.start }}
         shell: bash
         run: |
           set -euo pipefail
           python3 main/dist/homebrew/update_cask.py \
             tap/Casks/railty.rb "$VERSION" "$SHA256" "$URL"
           ruby -c tap/Casks/railty.rb
+          grep -q "version \"${VERSION}\"" tap/Casks/railty.rb
+          grep -q "sha256 \"${SHA256}\"" tap/Casks/railty.rb
+
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Casks/railty.rb
+
+          T_END=$(date +%s)
+          DUR=$((T_END - T_START))
+
           if git diff --cached --quiet; then
-            echo "Tap already points at $VERSION"
+            {
+              echo "### Homebrew Tap Sync: NO UPDATE NEEDED"
+              echo
+              echo "- **Repository**: \`${TAP_REPOSITORY}\`"
+              echo "- **Status**: \`Casks/railty.rb\` already points to \`v${VERSION}\` (\`${SHA256}\`)."
+              echo "- **Duration**: ${DUR}s"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "Tap already points at v$VERSION ($SHA256)"
           else
             git commit -m "railty $VERSION"
             git push
+            COMMIT_SHA="$(git rev-parse --short HEAD)"
+            {
+              echo "### Homebrew Tap Sync: SUCCEEDED"
+              echo
+              echo "- **Repository**: \`${TAP_REPOSITORY}\` (\`${COMMIT_SHA}\`)"
+              echo "- **Version**: \`v${VERSION}\`"
+              echo "- **SHA-256**: \`${SHA256}\`"
+              echo "- **URL**: \`${URL}\`"
+              echo "- **Duration**: ${DUR}s"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "Updated ${TAP_REPOSITORY} to v${VERSION} (${COMMIT_SHA})"
           fi
+
+      - name: Report Homebrew update failure
+        if: failure() && steps.credentials.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "### Homebrew Tap Sync: FAILED"
+            echo
+            echo "- **Repository**: \`${TAP_REPOSITORY}\`"
+            echo "- **Target Version**: \`v${VERSION}\`"
+            echo "- **SHA-256**: \`${SHA256}\`"
+            echo "- **URL**: \`${URL}\`"
+            echo "- **Hint**: Check whether the Release ZIP URL is downloadable, \`HOMEBREW_TAP_DEPLOY_KEY\` is a valid write-capable deploy key on \`${TAP_REPOSITORY}\`, and \`Casks/railty.rb\` has valid \`version\`/\`sha256\`/\`url\` fields."
+          } >> "$GITHUB_STEP_SUMMARY"

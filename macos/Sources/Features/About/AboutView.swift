@@ -3,8 +3,7 @@ import SwiftUI
 struct AboutView: View {
     @Environment(\.openURL) var openURL
 
-    private let githubURL = URL(string: "https://github.com/ghostty-org/ghostty")
-    private let docsURL = URL(string: "https://ghostty.org/docs")
+    private let repository = "https://github.com/vendettar/railty"
 
     /// Read the commit from the bundle.
     private var build: String? { Bundle.main.infoDictionary?["CFBundleVersion"] as? String }
@@ -28,16 +27,6 @@ struct AboutView: View {
                 return
             }
             self = .other(version)
-        }
-
-        var url: URL? {
-            switch self {
-            case .stable(let version):
-                let slug = version.replacingOccurrences(of: ".", with: "-")
-                return URL(string: "https://ghostty.org/docs/install/release-notes/\(slug)")
-            default:
-                return nil
-            }
         }
     }
 
@@ -85,7 +74,7 @@ struct AboutView: View {
                     Text("Railty")
                         .bold()
                         .font(.title)
-                    Text("Fast, native, feature-rich terminal \nemulator pushing modern features.")
+                    Text("A lightweight, native macOS terminal with vertical tabs.")
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                         .font(.caption)
@@ -97,7 +86,7 @@ struct AboutView: View {
                 VStack(spacing: 2) {
                     switch versionConfig {
                     case .stable(let version):
-                        PropertyRow(label: "Version", text: version, url: versionConfig.url)
+                        PropertyRow(label: "Version", text: version)
                     case .tip:
                         PropertyRow(label: "Version", text: "Tip Release")
                     case .other(let v):
@@ -109,22 +98,15 @@ struct AboutView: View {
                         PropertyRow(label: "Build", text: build)
                     }
                     if let commit, commit != "",
-                       let url = githubURL?.appendingPathComponent("/commits/\(commit)") {
+                       let url = URL(string: "\(repository)/commit/\(commit)") {
                         PropertyRow(label: "Commit", text: commit, url: url)
                     }
                 }
                 .frame(maxWidth: .infinity)
 
-                HStack(spacing: 8) {
-                    if let url = docsURL {
-                        Button("Docs") {
-                            openURL(url)
-                        }
-                    }
-                    if let url = githubURL {
-                        Button("GitHub") {
-                            openURL(url)
-                        }
+                if let url = URL(string: repository) {
+                    Button("GitHub") {
+                        openURL(url)
                     }
                 }
 

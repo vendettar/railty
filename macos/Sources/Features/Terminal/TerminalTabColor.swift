@@ -38,7 +38,7 @@ enum TerminalTabColor: Int, CaseIterable, Codable {
         }
     }
 
-    /// Stable lowercase identifier used by IPC (ghosttyctl set-color).
+    /// Stable lowercase identifier used by IPC (railtyctl set-color).
     var name: String { localizedName.lowercased() }
 
     init?(name: String) {

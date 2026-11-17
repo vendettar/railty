@@ -22,13 +22,11 @@ extension Ghostty {
         case custom
         case customStyle = "custom-style"
 
-        /// Railty ships a single official icon. All built-in values (including
-        /// legacy upstream variants) resolve to the compiled app icon; only a
-        /// user-supplied custom icon can override it. Kept for config parsing
-        /// compatibility with upstream Ghostty values.
-        var assetName: String? {
-            nil
-        }
+        // NOTE: There is no asset-name mapping here. Railty ships one compiled
+        // app icon; the app layer resolves every `macos-icon` value (official
+        // and the legacy upstream variants accepted by the config parser) to
+        // that bundled icon. Only `custom` can override it. The cases remain
+        // so the upstream config values keep parsing identically.
     }
 
     /// macos-icon-frame

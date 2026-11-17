@@ -14,7 +14,7 @@ Railty is a free, open-source, community-driven macOS terminal fork maintained i
 - **Git panel** — inspect the selected tab's branch, sync status, and changed files; checkout branches, commit, push, and pull. Open changed files in your configured editor.
 - **Ghostty terminal engine** — terminal rendering and core terminal behavior are powered by Ghostty.
 - **macOS-native interface** — built with the platform's native app and window frameworks. Sidebar colors follow the terminal palette, with controls for card borders and inactive tab colors.
-- **Tab control CLI** — the included `ghosttyctl` utility can rename tabs, set status and color metadata, send notifications, and query tab state.
+- **Tab control CLI** — the included `railtyctl` utility can rename tabs, set status and color metadata, send notifications, and query tab state.
 
 ## Screenshots
 
@@ -45,8 +45,8 @@ You can also download `Railty-macos-arm64.zip` directly from
 - Supported macOS: 13.0 (Ventura) or later.
 - Supported CPU: Apple Silicon (arm64) only at present. The published ZIP is
   **not** a Universal binary; Intel builds are not shipped yet.
-- Signing: release builds use a stable ad-hoc signature unless Developer ID
-  signing and notarization secrets are configured. Unsigned builds do not
+- Signing: release builds use a stable ad-hoc signature unless the maintainer
+  has configured Developer ID signing and notarization. Unsigned builds do not
   enable Hardened Runtime, because the bundled Sparkle framework has no
   matching Team ID. Such builds may be blocked by macOS Gatekeeper; Homebrew
   installs normally clear the download quarantine. To approve a manually
@@ -66,27 +66,6 @@ To build from source instead, see [HACKING.md](HACKING.md); the pinned Zig
 version is declared in [`build.zig.zon`](build.zig.zon). Building the macOS app
 requires Xcode, the macOS SDK, and the Metal Toolchain.
 
-### Releasing
-
-Push a `vX.Y.Z` tag to build and publish a release:
-
-```sh
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-`workflow_dispatch` on the same workflow creates a **draft** test release
-instead of a public one. Optional repository secrets:
-
-| Secret | Purpose |
-| --- | --- |
-| `RAILTY_SIGNING_IDENTITY`, `RAILTY_SIGNING_CERTIFICATE_B64`, `RAILTY_SIGNING_CERTIFICATE_PASSWORD`, `RAILTY_KEYCHAIN_PASSWORD` | Developer ID signing |
-| `APPLE_NOTARIZATION_ISSUER`, `APPLE_NOTARIZATION_KEY_ID`, `APPLE_NOTARIZATION_KEY` | Notarization |
-| `HOMEBREW_TAP_TOKEN` | Fine-grained PAT with write access to `vendettar/homebrew-railty`, used to update the Cask after a published release |
-
-Without `HOMEBREW_TAP_TOKEN`, update `Casks/railty.rb` in the tap manually
-using the version, URL, and SHA-256 printed in the release workflow summary.
-
 ## Configuration
 
 Add these supported settings to your Ghostty configuration file:
@@ -102,17 +81,17 @@ sidebar-git = true
 Set `sidebar-git = false` to hide the Git panel. Status entries can be set from the CLI:
 
 ```sh
-ghosttyctl rename "Build"
-ghosttyctl set-status task "Compiling" --icon hammer
-ghosttyctl notify --title "Build" --body "Finished"
-ghosttyctl list
+railtyctl rename "Build"
+railtyctl set-status task "Compiling" --icon hammer
+railtyctl notify --title "Build" --body "Finished"
+railtyctl list
 ```
 
-The CLI script is `cli/ghosttyctl`. From the repository root, you can put it on your `PATH` with:
+The CLI script is `cli/railtyctl`. From the repository root, you can put it on your `PATH` with:
 
 ```sh
 mkdir -p "$HOME/.local/bin"
-ln -s "$PWD/cli/ghosttyctl" "$HOME/.local/bin/ghosttyctl"
+ln -s "$PWD/cli/railtyctl" "$HOME/.local/bin/railtyctl"
 ```
 
 Ensure `$HOME/.local/bin` is on your `PATH`.
@@ -128,6 +107,8 @@ Contributions should target this repository. Submit proposed changes as pull req
 Railty is independently maintained and derived from [Ghostty Sidegeist](https://github.com/tomreinert/ghostty-sidegeist), created by [Tom Reinert](https://github.com/tomreinert). Ghostty Sidegeist is based on [Ghostty](https://github.com/ghostty-org/ghostty). Thanks to Tom Reinert, Mitchell Hashimoto, and the contributors to both upstream projects for the work Railty builds on.
 
 Railty is not an official Ghostty project or release.
+
+For terminal configuration reference, see the [upstream Ghostty documentation](https://ghostty.org/docs). It documents the upstream project; Railty shares most of its configuration keys but is a separate fork.
 
 ## License
 

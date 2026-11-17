@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# ghosttyctl - CLI controller for Ghostty terminal (fork)
-# Communicates with the Ghostty IPC socket to control tabs.
+# railtyctl - CLI controller for Railty terminal
+# Communicates with the Railty IPC socket to control tabs.
 #
 
 set -euo pipefail
@@ -12,10 +12,10 @@ SOCKET_PATH="${GHOSTTY_SOCKET:-/tmp/ghostty-$(id -u).sock}"
 
 usage() {
     cat <<'USAGE'
-ghosttyctl - control Ghostty tabs via IPC
+railtyctl - control Railty tabs via IPC
 
 Usage:
-  ghosttyctl <command> [options]
+  railtyctl <command> [options]
 
 Commands:
   rename <title>           Rename the current tab (empty string to clear)
@@ -57,14 +57,14 @@ tab_id_param() {
     fi
 }
 
-# Send a JSON request to the Ghostty IPC socket and print the response.
+# Send a JSON request to the Railty IPC socket and print the response.
 # Appends a newline delimiter as required by the protocol.
 send_request() {
     local json="$1"
 
     if [[ ! -S "$SOCKET_PATH" ]]; then
         echo "error: socket not found at $SOCKET_PATH" >&2
-        echo "Is Ghostty running?" >&2
+        echo "Is Railty running?" >&2
         exit 1
     fi
 
@@ -75,7 +75,7 @@ send_request() {
 
 cmd_rename() {
     if [[ $# -lt 1 ]]; then
-        echo "usage: ghosttyctl rename <title>" >&2
+        echo "usage: railtyctl rename <title>" >&2
         exit 1
     fi
     local title
@@ -87,10 +87,10 @@ cmd_rename() {
 cmd_notify() {
     local title="" body=""
 
-    # Short form: ghosttyctl notify "message"
+    # Short form: railtyctl notify "message"
     if [[ $# -ge 1 && "$1" != "--title" && "$1" != "--body" ]]; then
         body="$(json_escape "$1")"
-        title="Ghostty"
+        title="Railty"
         shift
     fi
 
@@ -106,15 +106,15 @@ cmd_notify() {
                 shift 2
                 ;;
             *)
-                echo "usage: ghosttyctl notify <message>" >&2
-                echo "       ghosttyctl notify --title T --body B" >&2
+                echo "usage: railtyctl notify <message>" >&2
+                echo "       railtyctl notify --title T --body B" >&2
                 exit 1
                 ;;
         esac
     done
 
     if [[ -z "$body" && -z "$title" ]]; then
-        echo "usage: ghosttyctl notify <message>" >&2
+        echo "usage: railtyctl notify <message>" >&2
         exit 1
     fi
 
@@ -123,7 +123,7 @@ cmd_notify() {
 
 cmd_set_status() {
     if [[ $# -lt 2 ]]; then
-        echo "usage: ghosttyctl set-status <key> <value> [--icon <sf-symbol>]" >&2
+        echo "usage: railtyctl set-status <key> <value> [--icon <sf-symbol>]" >&2
         exit 1
     fi
 
@@ -155,7 +155,7 @@ cmd_set_status() {
 
 cmd_clear_status() {
     if [[ $# -lt 1 ]]; then
-        echo "usage: ghosttyctl clear-status <key>" >&2
+        echo "usage: railtyctl clear-status <key>" >&2
         exit 1
     fi
 
@@ -167,7 +167,7 @@ cmd_clear_status() {
 
 cmd_set_color() {
     if [[ $# -lt 1 ]]; then
-        echo "usage: ghosttyctl set-color <color>" >&2
+        echo "usage: railtyctl set-color <color>" >&2
         echo "colors: none blue purple pink red orange yellow green teal graphite" >&2
         exit 1
     fi
@@ -228,7 +228,7 @@ case "$1" in
         ;;
     *)
         echo "error: unknown command '$1'" >&2
-        echo "Run 'ghosttyctl --help' for usage." >&2
+        echo "Run 'railtyctl --help' for usage." >&2
         exit 1
         ;;
 esac

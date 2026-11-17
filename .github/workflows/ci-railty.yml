@@ -1,0 +1,153 @@
+name: Railty CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railty-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ZIG_VERSION: "0.17.0"
+  ZIG_LINUX_X64_SHA256: "1cbe9df9f27e6b78d14ccbca43b6703a404ef79ef1c463de901d7f088d4e2026"
+
+jobs:
+  checks:
+    name: Lightweight Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+
+      - name: Validate Railty workflow YAML syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in .github/workflows/ci-railty.yml .github/workflows/release-railty.yml; do
+            ruby -ryaml -e "YAML.load_file(ARGV[0])" "$f"
+            echo "YAML OK: $f"
+          done
+
+      - name: Validate workflow syntax with actionlint
+        shell: bash
+        env:
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+        run: |
+          set -euo pipefail
+          # YAML parsing alone does not validate GitHub Actions expressions or
+          # step structure. actionlint is a single pinned binary with a
+          # verified checksum; shellcheck is handled by the step below.
+          TARBALL="${RUNNER_TEMP}/actionlint.tar.gz"
+          curl -fsSL --retry 3 \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" \
+            -o "$TARBALL"
+          echo "$ACTIONLINT_SHA256  $TARBALL" | sha256sum --check -
+          mkdir -p "${RUNNER_TEMP}/actionlint"
+          tar -xzf "$TARBALL" -C "${RUNNER_TEMP}/actionlint" actionlint
+          # xcode-27 is our self-hosted runner; declared in .github/actionlint.yaml.
+          "${RUNNER_TEMP}/actionlint/actionlint" \
+            -config-file .github/actionlint.yaml -shellcheck= \
+            .github/workflows/ci-railty.yml .github/workflows/release-railty.yml
+          echo "actionlint OK"
+
+      - name: Lint Railty release shell scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          shellcheck dist/macos/package-railty.sh dist/macos/sign-railty.sh dist/macos/notarize-railty.sh
+          echo "ShellCheck OK"
+
+      - name: Validate Homebrew Cask update script and Ruby syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile dist/homebrew/update_cask.py
+          TMP_RB="$(mktemp /tmp/railty-cask-XXXXXX.rb)"
+          trap 'rm -f "$TMP_RB"' EXIT
+          cat > "$TMP_RB" <<'EOF'
+          cask "railty" do
+            version "0.1.0"
+            sha256 "1e6f289dc57a5dbff3ba863502dad1ac4f8b6f6e74fdd54ed805606cb7b2a339"
+
+            url "https://github.com/vendettar/railty/releases/download/v#{version}/Railty-macos-arm64.zip"
+            name "Railty"
+            desc "Lightweight native macOS terminal with vertical tabs"
+            homepage "https://github.com/vendettar/railty"
+
+            app "Railty.app"
+          end
+          EOF
+          python3 dist/homebrew/update_cask.py \
+            "$TMP_RB" \
+            "0.1.2" \
+            "0000000000000000000000000000000000000000000000000000000000000000" \
+            "https://github.com/vendettar/railty/releases/download/v0.1.2/Railty-macos-arm64.zip"
+          ruby -c "$TMP_RB"
+          echo "Homebrew script & Ruby Cask check OK"
+
+      - name: Detect Zig source changes
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # actions/checkout checks out the PR merge commit (HEAD^1 = base, HEAD^2 = head).
+            CHANGED=$(git diff --name-only HEAD^1 HEAD 2>/dev/null || echo "build.zig")
+          else
+            BEFORE="${{ github.event.before }}"
+            if [[ -n "$BEFORE" && "$BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+              git fetch --no-tags --depth=1 origin "$BEFORE" 2>/dev/null || true
+              CHANGED=$(git diff --name-only "$BEFORE" HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "build.zig")
+            else
+              CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "build.zig")
+            fi
+          fi
+          if echo "$CHANGED" | grep -qE '(^build\.zig(\.zon)?$|\.zig$)'; then
+            echo "zig=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "zig=false" >> "$GITHUB_OUTPUT"
+            echo "No Zig changes detected; skipping zig fmt check."
+          fi
+
+      - name: Cache pinned Zig binary (Linux x86_64)
+        if: steps.changes.outputs.zig == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/zig-${{ env.ZIG_VERSION }}
+          key: zig-bin-${{ runner.os }}-${{ runner.arch }}-${{ env.ZIG_VERSION }}-${{ env.ZIG_LINUX_X64_SHA256 }}
+
+      - name: Check Zig formatting
+        if: steps.changes.outputs.zig == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIG_DIR="${RUNNER_TEMP}/zig-${ZIG_VERSION}"
+          if [[ ! -x "${ZIG_DIR}/zig" ]]; then
+            mkdir -p "${ZIG_DIR}"
+            TARBALL="${RUNNER_TEMP}/zig-${ZIG_VERSION}.tar.xz"
+            curl -fsSL --retry 3 --retry-delay 3 \
+              "https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz" \
+              -o "$TARBALL"
+            ACTUAL_SHA="$(sha256sum "$TARBALL" | awk '{print $1}')"
+            [[ "$ACTUAL_SHA" == "$ZIG_LINUX_X64_SHA256" ]] || {
+              printf 'error: Zig tarball SHA-256 mismatch: expected %s, got %s\n' \
+                "$ZIG_LINUX_X64_SHA256" "$ACTUAL_SHA" >&2
+              exit 1
+            }
+            tar -xJf "$TARBALL" -C "${ZIG_DIR}" --strip-components=1
+            rm -f "$TARBALL"
+          fi
+          "${ZIG_DIR}/zig" fmt --check build.zig src/
+          echo "Zig fmt OK"
