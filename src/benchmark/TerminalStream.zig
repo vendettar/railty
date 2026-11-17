@@ -37,6 +37,10 @@ pub const Options = struct {
     @"terminal-rows": u16 = 80,
     @"terminal-cols": u16 = 120,
 
+    /// Maximum scrollback lines retained. When unset, the terminal uses
+    /// its default byte-based scrollback limit.
+    @"max-lines": ?usize = null,
+
     /// Enable opt-in continuation tracking on the stream.
     @"continuation-enabled": bool = false,
 
@@ -71,6 +75,7 @@ pub fn create(
         .terminal = try .init(global.io(), alloc, .{
             .rows = opts.@"terminal-rows",
             .cols = opts.@"terminal-cols",
+            .max_scrollback_lines = opts.@"max-lines",
         }),
         .stream = undefined,
     };
