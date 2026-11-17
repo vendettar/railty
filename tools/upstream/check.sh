@@ -3,6 +3,8 @@
 # Safely fetches ghostty & sidegeist (with --no-tags), reports HEAD/merge-base
 # relationships, validates docs/upstream/state.json and ledger.jsonl, lists
 # unreviewed commits, and detects potential patch-id duplicates.
+# It also cross-checks state.json against the real Git HEAD, the newest release
+# tag, and the ledger's railtiy_commit ancestry, warning when they drift.
 # Never modifies main, never merges, and never cherry-picks.
 
 set -euo pipefail
@@ -61,10 +63,12 @@ if [[ "$DO_FETCH" == "true" ]]; then
 fi
 
 export RAILTY_CHECK_PATCH_ID="$CHECK_PATCH_ID"
+export RAILTY_CHECK_FETCH="$DO_FETCH"
 
 python3 - <<'PY'
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import Counter
@@ -188,6 +192,114 @@ by_integration = Counter(r["integration"] for r in rows)
 print(f"By source:      {dict(by_source)}")
 print(f"By decision:    {dict(by_decision)}")
 print(f"By integration: {dict(by_integration)}")
+print()
+
+# --- State consistency checks -------------------------------------------------
+# state.json is only useful if it matches reality. These checks are warnings,
+# not hard failures: the tool stays read-only and never edits the files.
+
+def semver(tag):
+    m = re.fullmatch(r"v(\d+)\.(\d+)\.(\d+)", tag or "")
+    if not m:
+        return None
+    return tuple(int(p) for p in m.groups())
+
+warnings = []
+state_railty = state.get("railty", {})
+state_head = state_railty.get("head_sha")
+
+print("== State Consistency ==")
+if not state_head:
+    warnings.append("state.json railty.head_sha is missing")
+elif state_head == head_sha:
+    print(f"railty.head_sha matches HEAD ({head_sha[:10]})")
+elif is_ancestor(state_head, "HEAD"):
+    out, _ = git("diff", "--name-only", f"{state_head}..HEAD")
+    changed = [f for f in out.splitlines() if f.strip()]
+    non_docs = [f for f in changed if not f.startswith("docs/")]
+    if non_docs:
+        warnings.append(
+            f"state.json head_sha {state_head[:10]} is behind HEAD {head_sha[:10]} "
+            f"with non-docs changes ({len(non_docs)}): {non_docs[:5]}"
+        )
+    else:
+        print(
+            f"railty.head_sha {state_head[:10]} is behind HEAD {head_sha[:10]} "
+            f"(docs-only drift, {len(changed)} file(s))"
+        )
+else:
+    warnings.append(
+        f"state.json head_sha {state_head[:10]} is NOT an ancestor of HEAD {head_sha[:10]} "
+        "(history rewrite or stale checkout?)"
+    )
+
+# Newest Railty release tag. Upstream Ghostty/Sidegeist tags (v1.4.0, tip, ...)
+# are shared into this repository, so local tags are not reliable here: only
+# origin's own tags identify Railty releases.
+release_tags = None
+out, rc = git("ls-remote", "--tags", "origin", check=False)
+if rc == 0:
+    release_tags = []
+    for line in out.splitlines():
+        ref = line.split("\t")[-1]
+        if not ref.startswith("refs/tags/") or ref.endswith("^{}"):
+            continue
+        name = ref[len("refs/tags/"):]
+        if semver(name):
+            release_tags.append(name)
+
+newest_tag = max(release_tags, key=semver) if release_tags else None
+state_tag = state_railty.get("latest_release_tag")
+if release_tags is None:
+    print("release tag check skipped: cannot reach origin (git ls-remote failed)")
+elif not newest_tag:
+    warnings.append("no Railty vX.Y.Z release tag found on origin")
+elif semver(newest_tag) and semver(state_tag):
+    if semver(newest_tag) > semver(state_tag):
+        warnings.append(f"state.json latest_release_tag {state_tag} is behind newest release tag {newest_tag}")
+    elif semver(newest_tag) < semver(state_tag):
+        warnings.append(f"state.json latest_release_tag {state_tag} is newer than any tag found ({newest_tag})")
+    else:
+        print(f"railty.latest_release_tag matches newest release tag ({newest_tag})")
+elif not state_tag:
+    warnings.append("state.json railty.latest_release_tag is missing")
+
+if newest_tag:
+    tag_commit, rc = git("rev-parse", f"{newest_tag}^{{commit}}", check=False)
+    if rc != 0:
+        warnings.append(f"release tag {newest_tag} cannot be resolved to a commit")
+    elif not is_ancestor(tag_commit, "HEAD"):
+        warnings.append(f"release tag {newest_tag} ({tag_commit[:10]}) is not an ancestor of HEAD")
+
+# Every integrated/adapted INCLUDE entry must point at a commit in HEAD history.
+integrated_rows = [
+    r for r in rows
+    if r["decision"] == "INCLUDE" and r["integration"] in ("integrated", "adapted")
+]
+missing_refs = [r["sha"][:10] for r in integrated_rows if not r.get("railty_commit")]
+dangling_refs = []
+for r in integrated_rows:
+    commit = r.get("railty_commit")
+    if not commit:
+        continue
+    _, rc = git("cat-file", "-e", f"{commit}^{{commit}}", check=False)
+    if rc != 0:
+        dangling_refs.append((r["sha"][:10], commit[:10], "missing"))
+    elif not is_ancestor(commit, "HEAD"):
+        dangling_refs.append((r["sha"][:10], commit[:10], "not-an-ancestor"))
+if missing_refs:
+    warnings.append(f"{len(missing_refs)} integrated INCLUDE entr(ies) lack railty_commit: {missing_refs[:5]}")
+if dangling_refs:
+    warnings.append(f"{len(dangling_refs)} integrated INCLUDE railty_commit(s) are not in HEAD history: {dangling_refs[:5]}")
+if not missing_refs and not dangling_refs:
+    print(f"ledger railty_commit ancestry OK ({len(integrated_rows)} integrated/adapted entries)")
+
+if warnings:
+    print(f"WARNINGS: {len(warnings)}")
+    for w in warnings:
+        print(f"  WARN: {w}")
+else:
+    print("All state consistency checks passed.")
 print()
 
 def check_upstream(name, remote_ref, remote_head, mb_sha):
