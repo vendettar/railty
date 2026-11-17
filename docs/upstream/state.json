@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "protocol_version": "1.0",
+  "updated_at": "2026-11-17",
+  "last_full_sync_date": null,
+  "railty": {
+    "head_sha": "e16eedc09ced76d1694a47bc89bd8b314f3f2d32",
+    "latest_release_tag": "v0.1.2",
+    "pinned_zig_version": "0.17.0",
+    "last_validated_commit": "e16eedc09ced76d1694a47bc89bd8b314f3f2d32",
+    "last_validation_scope": "partial: zig build test-lib-vt (-Dtest-filter=terminal/datastruct/simd/kitty), zig test src/os/path.zig (4/4), zig fmt --check build.zig src/, swiftc -parse on modified .swift, git diff --check main..HEAD; full zig build test & xcodebuild blocked (Xcode.app / Metal toolchain unavailable locally)",
+    "sync_branch": "sync/ghostty-fixes-2026-11"
+  },
+  "upstreams": {
+    "ghostty": {
+      "remote": "ghostty",
+      "url": "https://github.com/ghostty-org/ghostty.git",
+      "branch": "main",
+      "remote_head_sha": "5ebe501a63425b13d9952e8c54682c046386e5af",
+      "latest_release_tag": "v1.4.0",
+      "latest_release_sha": "83fb95624b0439ee660c2679b43b38c8b63769cd",
+      "last_integrated_sha": "83fb95624b0439ee660c2679b43b38c8b63769cd",
+      "last_reviewed_sha": "5ebe501a63425b13d9952e8c54682c046386e5af",
+      "reviewed_range": {
+        "base_sha": "83fb95624b0439ee660c2679b43b38c8b63769cd",
+        "head_sha": "5ebe501a63425b13d9952e8c54682c046386e5af",
+        "total_commits": 395,
+        "non_merge_commits": 267,
+        "merge_commits": 128
+      }
+    },
+    "sidegeist": {
+      "remote": "sidegeist",
+      "url": "https://github.com/tomreinert/ghostty-sidegeist.git",
+      "branch": "main",
+      "remote_head_sha": "5904a523477542b114939d93594f82348f27b3b5",
+      "latest_release_tag": "v1.4.0-fork.1",
+      "latest_release_sha": "5904a523477542b114939d93594f82348f27b3b5",
+      "last_integrated_sha": "5904a523477542b114939d93594f82348f27b3b5",
+      "last_reviewed_sha": "5904a523477542b114939d93594f82348f27b3b5",
+      "reviewed_range": {
+        "base_sha": "5904a523477542b114939d93594f82348f27b3b5",
+        "head_sha": "5904a523477542b114939d93594f82348f27b3b5",
+        "total_commits": 0,
+        "non_merge_commits": 0,
+        "merge_commits": 0
+      }
+    }
+  },
+  "ledger_summary": {
+    "file": "docs/upstream/ledger.jsonl",
+    "total_entries": 395,
+    "by_decision": {
+      "INCLUDE": 45,
+      "DEFER": 149,
+      "SKIP": 201,
+      "ALREADY_INCLUDED": 0,
+      "NEEDS_REVIEW": 0
+    },
+    "by_integration": {
+      "pending": 0,
+      "deferred": 149,
+      "not-applicable": 201,
+      "integrated": 44,
+      "adapted": 1,
+      "rejected": 0
+    }
+  },
+  "active_task": {
+    "status": "sync_branch_ready_for_ci_and_merge",
+    "branch": "sync/ghostty-fixes-2026-11",
+    "description": "All 45 INCLUDE commits (44 integrated, 1 adapted) ported onto sync/ghostty-fixes-2026-11. 0 pending INCLUDE commits remain. Ready for CI / Xcode host full build & test validation before merging to main.",
+    "next_recommended_branch": "sync/ghostty-fixes-2026-11",
+    "remaining_priority_groups": []
+  },
+  "pending_review_ranges": [],
+  "notes": [
+    "Review cursor (last_reviewed_sha) is strictly separate from integrated baseline (last_integrated_sha).",
+    "Ghostty #15230 (1d84459682) bumped minimum_zig_version to 0.17.1 on 2026-11-15 and is DEFERRED while Railty CI pins Zig 0.17.0.",
+    "Always fetch remotes with --no-tags to avoid tag collisions on shared 'tip' or local Railty release tags."
+  ]
+}

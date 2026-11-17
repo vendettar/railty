@@ -98,7 +98,7 @@ Ensure `$HOME/.local/bin` is on your `PATH`.
 
 ## Development
 
-Use `zig build` to build the app and `zig build test` to run the Zig test suite. [AGENTS.md](AGENTS.md) lists repository commands, and [HACKING.md](HACKING.md) documents the inherited build environment and technical workflow.
+Use `zig build` to build the app and `zig build test` to run the Zig test suite. [AGENTS.md](AGENTS.md) lists repository commands, [HACKING.md](HACKING.md) documents the inherited build environment and technical workflow, and [docs/upstream/README.md](docs/upstream/README.md) defines the maintainer upstream sync and commit review protocol (with state tracked in [docs/upstream/state.json](docs/upstream/state.json) and [docs/upstream/ledger.jsonl](docs/upstream/ledger.jsonl)).
 
 Contributions should target this repository. Submit proposed changes as pull requests to Railty.
 
