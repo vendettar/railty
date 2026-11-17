@@ -83,31 +83,78 @@ jobs:
           fi
 
           if [[ "$PUBLISHED" == "true" ]]; then
-            # Verify the tag still points at the commit GitHub checked out.
-            # A moved tag must never publish as if it were the original build.
-            TAG_REF="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" 2>/dev/null || true)"
-            TAG_SHA="$(printf '%s' "$TAG_REF" | jq -r '.object.sha // empty')"
-            if [[ "$(printf '%s' "$TAG_REF" | jq -r '.object.type // empty')" == "tag" ]]; then
-              TAG_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_SHA" --jq '.object.sha' 2>/dev/null || true)"
+            # Fail-closed GitHub API helper. An explicit 404 means the resource
+            # is genuinely absent; any other failure (network, auth, rate limit,
+            # 5xx) must abort instead of being mistaken for "not found".
+            #   $1       : API path
+            #   API_BODY : response body on success
+            #   API_RC   : 0 = ok, 2 = explicit 404, 3 = other error
+            API_BODY="$(mktemp)"
+            api_get() {
+              local path="$1" err_body
+              err_body="$(mktemp)"
+              API_RC=0
+              if gh api "$path" >"$API_BODY" 2>"$err_body"; then
+                :
+              elif grep -q 'HTTP 404' "$err_body"; then
+                API_RC=2
+              else
+                printf '::error::GitHub API request failed with a non-404 error: %s\n' "$path" >&2
+                cat "$err_body" >&2
+                API_RC=3
+              fi
+              rm -f "$err_body"
+            }
+
+            # 1) Tag immutability. A tag-push run must agree with the remote
+            #    tag, otherwise a moved tag could publish old-version assets
+            #    built from unrelated code.
+            api_get "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG"
+            case "$API_RC" in
+              3) exit 1 ;;
+              2)
+                printf '::error::Tag %s could not be resolved via the GitHub API (404); refusing to publish an unverifiable build.\n' \
+                  "$TAG" >&2
+                exit 1
+                ;;
+            esac
+            TAG_SHA="$(jq -r '.object.sha // empty' "$API_BODY")"
+            if [[ "$(jq -r '.object.type // empty' "$API_BODY")" == "tag" ]]; then
+              api_get "repos/$GITHUB_REPOSITORY/git/tags/$TAG_SHA"
+              if (( API_RC != 0 )); then
+                printf '::error::Could not dereference annotated tag %s (API rc=%s); refusing to publish.\n' \
+                  "$TAG" "$API_RC" >&2
+                exit 1
+              fi
+              TAG_SHA="$(jq -r '.object.sha // empty' "$API_BODY")"
             fi
-            if [[ -n "$TAG_SHA" && "$TAG_SHA" != "$GITHUB_SHA" ]]; then
+            if [[ -z "$TAG_SHA" ]]; then
+              printf '::error::Tag %s resolved to an empty SHA; refusing to publish.\n' "$TAG" >&2
+              exit 1
+            fi
+            if [[ "$TAG_SHA" != "$GITHUB_SHA" ]]; then
               printf '::error::Tag %s points at %s but this run builds %s; refusing a moved tag.\n' \
                 "$TAG" "${TAG_SHA:0:9}" "${GITHUB_SHA:0:9}" >&2
               exit 1
             fi
+            echo "Tag $TAG verified at ${TAG_SHA:0:9}"
 
-            # Any existing official Release is immutable: stop early so a
-            # repeated or stale trigger cannot overwrite assets. If it exists
-            # with missing assets, report that explicitly instead of silently
-            # rebuilding a partial Release.
-            if EXISTING="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
-              --json isDraft,assets 2>/dev/null)"; then
-              IS_DRAFT="$(printf '%s' "$EXISTING" | jq -r '.isDraft')"
-              ASSETS="$(printf '%s' "$EXISTING" | jq -r '[.assets[].name] | join(", ")')"
-              printf '::error::Official release %s already exists (draft=%s, assets=[%s]); refusing to overwrite or partially rebuild it.\n' \
-                "$TAG" "$IS_DRAFT" "$ASSETS" >&2
-              exit 1
-            fi
+            # 2) Existing official Release is immutable. Only a clear 404 means
+            #    "not published yet" and allows the build to continue. Partial
+            #    or draft releases are still refused rather than rebuilt.
+            api_get "repos/$GITHUB_REPOSITORY/releases/tags/$TAG"
+            case "$API_RC" in
+              3) exit 1 ;;
+              0)
+                IS_DRAFT="$(jq -r '.draft' "$API_BODY")"
+                ASSETS="$(jq -r '[.assets[].name] | join(", ")' "$API_BODY")"
+                printf '::error::Official release %s already exists (draft=%s, assets=[%s]); refusing to overwrite or partially rebuild it.\n' \
+                  "$TAG" "$IS_DRAFT" "$ASSETS" >&2
+                exit 1
+                ;;
+            esac
+            echo "No existing release for $TAG; safe to proceed"
+            rm -f "$API_BODY"
           fi
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
