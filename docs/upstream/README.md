@@ -216,6 +216,12 @@ Railty CI/CD 当前固定 **`ZIG_VERSION = "0.17.0"`**（`build.zig.zon`、`ci-r
   - 保留历史决策；当提交被集成到 Railty 时，**更新该条记录的 `integration`、`railty_commit`、`validation` 与 `notes`**，不要删除原审查理由。
   - `integration` 取值：`pending` | `integrated` | `adapted` | `not-applicable` | `rejected`。
   - `validation` 取值：`not-run` | `zig-test-passed` | `macos-build-passed` | `runtime-verified` | `failed`。
+- **`docs/upstream/defer-queue.json`**：
+  - 为每一条 `DEFER` 记录建立独立索引项，保留 SHA，并补充 `group`、`priority`（`P1`/`P2`/`P3`）、`revisit_trigger`、`validation_plan`、`review_status`、`last_reassessed_at` 与 `notes`。
+  - 队列必须与台账一一对应：每个 `DEFER` 恰好一项，且不得包含非 `DEFER` 的 SHA；`tools/upstream/check.sh` 会强制校验。
+  - `revisit_trigger` 使用固定枚举（`on_toolchain_upgrade`、`on_sidegeist_upgrade`、`on_upstream_dependency_update`、`on_macos_snapshot_consumer`、`on_next_sync_review`、`manual_dedicated_port`、`on_user_request`），每条 `DEFER` 必须有明确触发条件。
+  - 新的上游提交、Sidegeist 升级、工具链升级或 macOS 开始使用快照 API 时，`check.sh` 会列出已满足复审条件的条目；满足条件不等于自动集成。
+- **`docs/upstream/benchmarks/`**：性能实验的环境、命令与结果；无法测量时必须写 `NOT_TESTED` 与阻塞原因，禁止用 CI 构建耗时冒充运行时性能。
 - **`docs/upstream/state.json`**：
   - 严格区分 `last_reviewed_sha`（已经逐条审查到的位置）与 `last_integrated_sha`（代码历史已经真正包含的基线）。
   - 仅在区间内全部提交都有台账记录后，才推进 `last_reviewed_sha`；不得猜测或跳号。
@@ -227,12 +233,17 @@ Railty CI/CD 当前固定 **`ZIG_VERSION = "0.17.0"`**（`build.zig.zon`、`ci-r
 
 ### 启动 Preflight（每次任务前必须执行）
 
-1. 读取：`AGENTS.md` → `docs/upstream/README.md` → `docs/upstream/state.json` → `docs/upstream/ledger.jsonl`（尾部/汇总）→ 最近一次 `docs/upstream/reviews/*.md` → `.github/CI.md`。
+1. 读取：`AGENTS.md` → `docs/upstream/README.md` → `docs/upstream/state.json` → `docs/upstream/ledger.jsonl`（尾部/汇总）→ `docs/upstream/defer-queue.json` → 最近一次 `docs/upstream/reviews/*.md` → `.github/CI.md`。
 2. 运行只读检查脚本：`./tools/upstream/check.sh`。
-3. 确认未审查提交、待移植 `INCLUDE` 队列及当前任务模块是否受上游已有修复影响：
+3. 确认未审查提交、待移植 `INCLUDE` 队列、以及当前任务模块是否受上游已有修复影响：
    - 若正在开发的功能/修 bug 模块在 Ghostty/Sidegeist 已有修复，优先审查并参考或先移植上游方案，避免重复造轮子。
    - 若发现未集成的 `Security` 或 `Critical Bug` 修复，必须在给用户的回复中主动提醒。
    - 若用户要求的是普通功能开发，完成上述检查与提醒即可，**不得擅自启动大规模上游合并**。
+4. **检查高优先级 `DEFER`（与新增提交同等重要）**：
+   - 读取 `check.sh` 的 `DEFER Review Queue` 与 `DEFER Re-assessment Gates` 输出，关注 `P1` 条目与已满足的 `revisit_trigger`。
+   - 核对上游新修复是否让旧 `DEFER` 更容易集成、Sidegeist 新版本是否解决了冲突、工具链是否已允许旧性能补丁、是否出现更好的上游替代方案。
+   - 新提交可能使旧 `SKIP` 结论失效；发现这种情况时更新台账并说明原因。
+   - 普通功能开发只做检查与提醒，**不得因为 Preflight 就强制展开一次大型上游同步**；真正的集成仍须独立分支、完整依赖链与测试。
 
 ### 断点恢复上一次未完成的任务
 

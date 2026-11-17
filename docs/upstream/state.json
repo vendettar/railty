@@ -4,11 +4,11 @@
   "updated_at": "2026-11-17",
   "last_full_sync_date": null,
   "railty": {
-    "head_sha": "2d9cff5ec9a18a0a6bfb278c247c6d32535eae54",
-    "latest_release_tag": "v0.1.2",
+    "head_sha": "be61dbaeb1918c4e847b0fb7e2fbd0b93c0dd3c0",
+    "latest_release_tag": "v0.1.4",
     "pinned_zig_version": "0.17.0",
-    "last_validated_commit": "2d9cff5ec9a18a0a6bfb278c247c6d32535eae54",
-    "last_validation_scope": "xcode-27 Railty Release arm64 build passed (run 44042567498, GhosttyKit.xcframework + Railty.app); zig build test-lib-vt (full suite passed), zig test src/os/path.zig (4/4), zig fmt --check build.zig src/, swiftc -parse on modified .swift, git diff --check",
+    "last_validated_commit": "be61dbaeb1918c4e847b0fb7e2fbd0b93c0dd3c0",
+    "last_validation_scope": "xcode-27 Railty Release arm64 builds: run 44042567498 (45 upstream fixes, success), run 44050630021 (v0.1.3 published), run 44053591222 (v0.1.4 published); zig build test-lib-vt (full), zig test src/os/path.zig (4/4), zig fmt --check build.zig src/, swiftc -parse on modified .swift, xmllint on modified .xib",
     "sync_branch": null
   },
   "upstreams": {
@@ -66,17 +66,58 @@
       "rejected": 0
     }
   },
+  "deferred_review": {
+    "queue_file": "docs/upstream/defer-queue.json",
+    "last_reviewed_at": "2026-11-17",
+    "total": 149,
+    "by_priority": {
+      "P1": 14,
+      "P2": 32,
+      "P3": 103
+    },
+    "by_status": {
+      "awaiting_upstream": 75,
+      "awaiting_dependencies": 45,
+      "awaiting_validation": 23,
+      "awaiting_toolchain": 4,
+      "no_runtime_path": 1,
+      "candidate_next_batch": 2
+    },
+    "satisfied_triggers": 0,
+    "report": "docs/upstream/reviews/2026-11-17-deferred-review.md",
+    "experiment_branch": "sync/ghostty-pagelist-cr-pin",
+    "experiment_commit": "f6cd5e4fd",
+    "experiment_ci_run": 44062908329,
+    "experiment_ci_result": "success",
+    "experiment_validation": "lib-vt tests passed, macOS arm64 build passed, performance NOT_TESTED",
+    "experiment_merged": false,
+    "prune_memory_experiment": {
+      "upstream_sha": "d0addb9cdf9a30901bd953421dccada3bf610d7c",
+      "branch": "sync/ghostty-pagelist-prune-memory",
+      "commit": "04c6deea1",
+      "ci_run": 44075475339,
+      "ci_result": "success",
+      "validation": "PageList tests passed, macOS arm64 build passed, performance NOT_TESTED",
+      "merged": false
+    }
+  },
   "active_task": {
     "status": "completed",
     "branch": "main",
-    "description": "All 45 INCLUDE commits (44 integrated, 1 adapted) ported, validated on xcode-27 (run 44042567498), and linearly rebased onto main. 0 pending INCLUDE commits remain.",
+    "description": "Upstream Sync v1.2 Lite: CI now runs the upstream sync Python tests; PageList prune-memory fix confirmed applicable and adapted on an unmerged branch with Zig tests + macOS build; maintenance scope unchanged.",
     "next_recommended_branch": null,
-    "remaining_priority_groups": []
+    "remaining_priority_groups": [
+      "merge decision: sync/ghostty-pagelist-prune-memory",
+      "terminal-refcounted-set (only on demand)"
+    ]
   },
   "pending_review_ranges": [],
   "notes": [
     "Review cursor (last_reviewed_sha) is strictly separate from integrated baseline (last_integrated_sha).",
     "Ghostty #15230 (1d84459682) bumped minimum_zig_version to 0.17.1 on 2026-11-15 and is DEFERRED while Railty CI pins Zig 0.17.0.",
-    "Always fetch remotes with --no-tags to avoid tag collisions on shared 'tip' or local Railty release tags."
+    "Always fetch remotes with --no-tags to avoid tag collisions on shared 'tip' or local Railty release tags.",
+    "tools/upstream/check.sh warns when state.json drifts from HEAD, the newest origin release tag, or ledger railty_commit ancestry; docs-only HEAD drift is reported as informational, not a warning.",
+    "Release-tag consistency checks use origin tags only, because local tags also contain shared Ghostty/Sidegeist release tags such as v1.4.0.",
+    "2026-11-17 DEFER audit: all 75 template-reason entries were path-sampled; 73 are libghostty-vt ABI/packaging, 2 had inaccurate reasons and were corrected in ledger.jsonl (9b848b0f5c, ef1649c853) with decisions unchanged."
   ]
 }
