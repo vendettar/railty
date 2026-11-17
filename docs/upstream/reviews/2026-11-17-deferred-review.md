@@ -1,63 +1,63 @@
 # Railty Deferred Review & High-Value Candidate Analysis (2026-11-17)
 
-> **历史记录（重写前）**：本报告基线 `ab61a1099` 与当时的分支 SHA 已不在当前 `main` 历史中，DEFER 数量也已从 149 降为 148。请勿把本报告当作当前操作起点；当前 SHA 与队列状态见 [2026-11-17-v1.2-lite.md](2026-11-17-v1.2-lite.md#当前-sha强推后) 与 `state.json`。
+> **Historical record (before rewrite)**: The baseline `ab61a1099` of this report and the branch SHA at that time are no longer in the current `main` history, and the DEFER count has also dropped from 149 to 148. Do not treat this report as the current starting point for operations; for the current SHA and queue status, see [2026-11-17-v1.2-lite.md](2026-11-17-v1.2-lite.md#current-sha-after-force-push) and `state.json`.
 
-本报告是 **Upstream Sync v1.1** 的审查与实验记录，基线为 `main = ab61a1099`、发布版 `v0.1.4`。它不推翻既有 395 条台账，而是给 149 条 `DEFER` 建立可执行的复审队列，并对高价值候选做适用性评估。
+This report is the review and experiment record for **Upstream Sync v1.1**, with a baseline of `main = ab61a1099` and release `v0.1.4`. It does not overturn the existing 395-entry ledger; instead, it establishes an actionable re-review queue for the 149 `DEFER` entries and evaluates the applicability of high-value candidates.
 
 ---
 
-## 1. 前置核实（真实命令结果，非历史假设）
+## 1. Prerequisite Verification (real command results, not historical assumptions)
 
-| 检查项 | 实测结果 |
+| Check Item | Measured Result |
 |---|---|
 | Railty `HEAD` | `ab61a1099f96668492a4341570e43e8a4e2e7279` |
-| Ghostty `main` | `5ebe501a63425b13d9952e8c54682c046386e5af`（与上次审查相同，新增 0） |
-| Sidegeist `main` | `5904a523477542b114939d93594f82348f27b3b5`（新增 0） |
-| 未审查 Ghostty 提交 | 0 |
-| 未审查 Sidegeist 提交 | 0 |
-| `INCLUDE` 待集成 | 0（45 条全部 integrated/adapted） |
-| 45 条 `railty_commit` 祖先校验 | 全部通过 |
-| 最新 Release | `v0.1.4`（`be61dbaeb`，Homebrew Cask 已更新） |
-| CI/CD Zig | `0.17.0`（本机 `zig 0.17.1`，仅用于本地测试） |
-| 本机 Xcode | 仅 Command Line Tools，无 `metal` / `xcodebuild` |
-| 新安全/严重修复 | 无新增（Ghostty `main` 未前进） |
+| Ghostty `main` | `5ebe501a63425b13d9952e8c54682c046386e5af` (same as the previous review, 0 new) |
+| Sidegeist `main` | `5904a523477542b114939d93594f82348f27b3b5` (0 new) |
+| Unreviewed Ghostty commits | 0 |
+| Unreviewed Sidegeist commits | 0 |
+| `INCLUDE` pending integration | 0 (all 45 integrated/adapted) |
+| Ancestor validation for the 45 `railty_commit` entries | All passed |
+| Latest Release | `v0.1.4` (`be61dbaeb`, Homebrew Cask updated) |
+| CI/CD Zig | `0.17.0` (local machine has `zig 0.17.1`, used only for local testing) |
+| Local Xcode | Command Line Tools only, no `metal` / `xcodebuild` |
+| New security/critical fixes | None new (Ghostty `main` has not advanced) |
 
-`./tools/upstream/check.sh` 输出 `All state consistency checks passed`，`DEFER Re-assessment Gates: 0 satisfied`。
+`./tools/upstream/check.sh` outputs `All state consistency checks passed`, `DEFER Re-assessment Gates: 0 satisfied`.
 
 ---
 
-## 2. DEFER 复审队列（新机制）
+## 2. DEFER Re-Review Queue (new mechanism)
 
-新增 [defer-queue.json](../defer-queue.json)，为 149 条 `DEFER` 每条保留独立 SHA，并补充：
+Added [defer-queue.json](../defer-queue.json), which retains an independent SHA for each of the 149 `DEFER` entries and adds:
 
-| 字段 | 说明 |
+| Field | Description |
 |---|---|
-| `group` | 功能组（如 `terminal-refcounted-set`） |
+| `group` | Feature group (e.g. `terminal-refcounted-set`) |
 | `priority` | `P1` / `P2` / `P3` |
-| `revisit_trigger` | 重新评估的触发条件（枚举） |
-| `validation_plan` | 该组需要的验证步骤 |
+| `revisit_trigger` | Trigger condition for re-evaluation (enum) |
+| `validation_plan` | Validation steps required for the group |
 | `review_status` | `awaiting_validation` / `awaiting_dependencies` / `awaiting_toolchain` / `awaiting_upstream` / `no_runtime_path` / `candidate_next_batch` |
-| `last_reassessed_at` | 最近复核日期 |
-| `notes` | 结论与注意事项 |
+| `last_reassessed_at` | Most recent re-review date |
+| `notes` | Conclusions and cautions |
 
-当前分布：
+Current distribution:
 
-| 维度 | 分布 |
+| Dimension | Distribution |
 |---|---|
-| 优先级 | `P1: 14`，`P2: 32`，`P3: 103` |
-| 状态 | `awaiting_upstream 75`，`awaiting_dependencies 45`，`awaiting_validation 23`，`awaiting_toolchain 4`，`no_runtime_path 1`，`candidate_next_batch 1` |
-| 最大功能组 | `libghostty-vt-1.0-abi 75`、`terminal-misc-refactor 12`、`tmux-control-mode 8`、`terminal-refcounted-set 7`、`terminal-print-fastpath 5`、`terminal-style-packing 6`、`terminal-blank-row 5`、`terminal-pagelist-capacity 5`、`terminal-rowbuilder-render 5` |
+| Priority | `P1: 14`, `P2: 32`, `P3: 103` |
+| Status | `awaiting_upstream 75`, `awaiting_dependencies 45`, `awaiting_validation 23`, `awaiting_toolchain 4`, `no_runtime_path 1`, `candidate_next_batch 1` |
+| Largest feature groups | `libghostty-vt-1.0-abi 75`, `terminal-misc-refactor 12`, `tmux-control-mode 8`, `terminal-refcounted-set 7`, `terminal-print-fastpath 5`, `terminal-style-packing 6`, `terminal-blank-row 5`, `terminal-pagelist-capacity 5`, `terminal-rowbuilder-render 5` |
 
-触发条件语义（由 [defer_queue.py](../../../tools/upstream/defer_queue.py) 实现并被 `check.sh` 调用）：
+Trigger condition semantics (implemented by [defer_queue.py](../../../tools/upstream/defer_queue.py) and invoked by `check.sh`):
 
-- `on_toolchain_upgrade`：`state.railty.pinned_zig_version >= 0.17.1`
-- `on_sidegeist_upgrade`：Sidegeist 前进超过 `last_integrated_sha`
-- `on_upstream_dependency_update`：Ghostty 前进超过 `last_reviewed_sha`
-- `on_macos_snapshot_consumer`：`macos/` 或 `src/apprt` 出现 `ghostty_snapshot` 调用
-- `on_next_sync_review`：任一上游前进
-- `manual_dedicated_port` / `on_user_request`：只能人工触发
+- `on_toolchain_upgrade`: `state.railty.pinned_zig_version >= 0.17.1`
+- `on_sidegeist_upgrade`: Sidegeist advances beyond `last_integrated_sha`
+- `on_upstream_dependency_update`: Ghostty advances beyond `last_reviewed_sha`
+- `on_macos_snapshot_consumer`: `ghostty_snapshot` calls appear in `macos/` or `src/apprt`
+- `on_next_sync_review`: either upstream advances
+- `manual_dedicated_port` / `on_user_request`: can only be triggered manually
 
-`check.sh` 现在还输出：未审查的上游提交数、INCLUDE 待集成数、P1 数量、按组汇总、已满足的复审触发条件，以及“DEFER 提交已出现在 sidegeist/main”检测。新增 27 个单元测试，覆盖空队列、重复 SHA、非法状态、触发条件与历史重写等场景：
+`check.sh` now also outputs: the number of unreviewed upstream commits, the number of INCLUDE entries pending integration, the P1 count, a per-group summary, satisfied re-review triggers, and a "DEFER commit already present in sidegeist/main" detection. 27 unit tests were added, covering scenarios such as empty queues, duplicate SHAs, invalid states, trigger conditions, and history rewrites:
 
 ```bash
 python3 -m unittest tools/upstream/test_defer_queue.py   # 27 tests OK
@@ -65,80 +65,80 @@ python3 -m unittest tools/upstream/test_defer_queue.py   # 27 tests OK
 
 ---
 
-## 3. PageList / Terminal 性能组依赖分析
+## 3. PageList / Terminal Performance Group Dependency Analysis
 
-现状核实：当前 `src/terminal/PageList.zig` **没有** `carried_capacity`；`src/terminal/Style.zig` 仍是普通 `struct`（未压缩为 `u128`）；`Terminal.zig` 已有 `printSliceFast`/`printSliceStoreRun`，说明基线已含更早期的快路径，但未含本系列。
+Current state verification: the current `src/terminal/PageList.zig` does **not** have `carried_capacity`; `src/terminal/Style.zig` is still a plain `struct` (not packed into `u128`); `Terminal.zig` already has `printSliceFast`/`printSliceStoreRun`, which shows the baseline already contains an earlier fast path, but not this series.
 
-| 组 | Commits（短 SHA） | 依赖 / 后续修复 | 主要价值 | 风险 | 结论 |
+| Group | Commits (short SHA) | Dependencies / Follow-up fixes | Main Value | Risk | Conclusion |
 |---|---|---|---|---|---|
-| A. PageList 容量 | `a3b5946a59` (base, +555/−48), `0d4418ac20` (+321/−22), `9113da0298`, `f0d8cb7762`, `d20d208c51` | 必须整链：base 后紧接 edge-case 修复；`d20d` 调整 hyperlink map 容量 | 减少输出密集场景的页面重分配 | 高（PageList/page 大改） | 保持 `DEFER`，需专项分支 + 基准 |
-| B. Print Fast Path | `68750a1be2` (+768), `faa346b068`, `4c92f80954`, `22b8451441`, `c12d42eaf8` | `faa3`/`22b8`/`4c92` 是同一快路径的后续正确性修复 | ASCII/宽字符混合输出吞吐 | 高（必须连同修复） | 保持 `DEFER` |
-| C. Style 压缩 | `41557e2ccf` (u128), `73a2a1d06e`, `72bc97a9ed`, `de16f08dcf`, `fad1133619`, `54d162da5b` | 需一起改 Screen/Terminal/C style API | SGR 密集输出与内存 | 高（波及 C API） | 保持 `DEFER` |
-| D. Blank Row | `881fc68902`, `2178e635df`, `8484146c74`, `25de649dde`, `a227276b77` | `a227` 是快照测试修正，必须带上 | 清屏/空白行/滚动 | 中高 | 保持 `DEFER` |
-| E. RowBuilder / Render | `020a0a0998`, `d1ce0c4657`, `96d379822f`, `15a4432340` | `d1ce` 修复 `020a` 引入的回归 | 样式段查找与 endUpdate | 中 | 保持 `DEFER`；`96d3` 可单测 |
-| F. OSC 133 Prompt | `ce920296c8` | 含 synthetic Erase corpus 与 snapshot 测试更新；上次仅因测试冲突暂缓 | `ED2` 清屏扫描 | 中 | 保持 `DEFER`，可独立实验 |
-| G. Carriage Return Pin | `8434d0900e` | 独立 2 行 | 滚动流（上游 1.02–1.06x） | 低 | 唯一本轮实验项 |
-| H. PageList Prune 内存 | `d0addb9cdf` | 独立 Critical Bug 修复 | grow-prune 丢弃页面内存 | 中 | **P1**，建议优先实验 |
+| A. PageList capacity | `a3b5946a59` (base, +555/−48), `0d4418ac20` (+321/−22), `9113da0298`, `f0d8cb7762`, `d20d208c51` | Must be taken as a whole chain: edge-case fixes immediately follow the base; `d20d` adjusts hyperlink map capacity | Reduces page reallocation in output-heavy scenarios | High (major PageList/page changes) | Keep `DEFER`; needs a dedicated branch + benchmarks |
+| B. Print Fast Path | `68750a1be2` (+768), `faa346b068`, `4c92f80954`, `22b8451441`, `c12d42eaf8` | `faa3`/`22b8`/`4c92` are follow-up correctness fixes for the same fast path | ASCII/wide-character mixed output throughput | High (must be taken together with the fixes) | Keep `DEFER` |
+| C. Style packing | `41557e2ccf` (u128), `73a2a1d06e`, `72bc97a9ed`, `de16f08dcf`, `fad1133619`, `54d162da5b` | Requires changing the Screen/Terminal/C style API together | SGR-heavy output and memory | High (affects the C API) | Keep `DEFER` |
+| D. Blank Row | `881fc68902`, `2178e635df`, `8484146c74`, `25de649dde`, `a227276b77` | `a227` is a snapshot test correction and must be included | Clear screen/blank rows/scrolling | Medium-high | Keep `DEFER` |
+| E. RowBuilder / Render | `020a0a0998`, `d1ce0c4657`, `96d379822f`, `15a4432340` | `d1ce` fixes a regression introduced by `020a` | Style run lookup and endUpdate | Medium | Keep `DEFER`; `96d3` can be tested independently |
+| F. OSC 133 Prompt | `ce920296c8` | Includes the synthetic Erase corpus and snapshot test updates; previously deferred only due to test conflicts | `ED2` clear-screen scan | Medium | Keep `DEFER`; can be experimented with independently |
+| G. Carriage Return Pin | `8434d0900e` | Standalone 2 lines | Scrolling stream (upstream 1.02–1.06x) | Low | The only experiment item this round |
+| H. PageList Prune memory | `d0addb9cdf` | Standalone Critical Bug fix | grow-prune discarding page memory | Medium | **P1**, recommend experimenting first |
 
-共同结论：A–F 都是“上游后续修复依赖链”，禁止只摘第一条性能提交；本机无 `ghostty-bench`（Metal 阻塞），无法给出可信吞吐数据，因此本轮不合并任何性能补丁。
-
----
-
-## 4. RefCountedSet 整链评估
-
-7 条提交：`d03983f02c`（add 复用 dead ID，替代 NeedsRehash）、`636c1d7805`（只回收可置换的 dead item）、`738d8f7f5b`（成员检查替代 sentinel）、`38f4a710e3`（releaseMultiple 断言）、`31a52992f1`（回收被跳过的 dead ID 插入）、`aef8b7b38d`（收紧测试）、`5d3f653329`（文档）。
-
-现状核实：`src/terminal/ref_counted_set.zig`（890 行）与 Ghostty `v1.4.0` 基线完全一致；`add` 在无空位时仍返回 `NeedsRehash`，调用方通过克隆整页来压缩 ID。该系列把 dead-ID 复用引入 `add`。
-
-上游数据（提交信息内，非本机实测）：`links.vt` 无 scrollback 时 1.35x，`styled-heavy` 1.17x；`rg --hyperlink-format`、`chafa`、`eza --hyperlink` 等真实负载减少 3.6%–14.2% 指令数。对 Railty 的潜在价值主要在 hyperlink/样式密集输出，普通 ASCII 基本无变化。
-
-结论：保持 `DEFER`（`P2 / awaiting_dependencies`）；必须按拓扑整体移植，单独摘 `d039` 会破坏 `add`/`insert`/`deleteItem` 的假设。建议作为下一批首个实验组。
+Common conclusion: A–F are all "dependency chains of follow-up upstream fixes"; taking only the first performance commit is prohibited. This machine has no `ghostty-bench` (blocked by Metal), so credible throughput data cannot be produced; therefore no performance patch is merged this round.
 
 ---
 
-## 5. 新功能与高冲突候选
+## 4. RefCountedSet Whole-Chain Evaluation
 
-| 候选 | 规模 | 判断 |
+7 commits: `d03983f02c` (add reuses dead IDs, replacing NeedsRehash), `636c1d7805` (reclaim only displaceable dead items), `738d8f7f5b` (membership check replacing sentinel), `38f4a710e3` (releaseMultiple assertion), `31a52992f1` (reclaim dead IDs skipped on insert), `aef8b7b38d` (tighten tests), `5d3f653329` (docs).
+
+Current state verification: `src/terminal/ref_counted_set.zig` (890 lines) is exactly identical to the Ghostty `v1.4.0` baseline; `add` still returns `NeedsRehash` when there are no free slots, and callers compact IDs by cloning the whole page. This series introduces dead-ID reuse into `add`.
+
+Upstream data (from commit messages, not measured locally): 1.35x for `links.vt` without scrollback, 1.17x for `styled-heavy`; real workloads such as `rg --hyperlink-format`, `chafa`, and `eza --hyperlink` reduce instruction counts by 3.6%–14.2%. The potential value for Railty is mainly in hyperlink/style-heavy output; plain ASCII is basically unchanged.
+
+Conclusion: keep `DEFER` (`P2 / awaiting_dependencies`); it must be ported as a whole in topological order, since taking `d039` alone would break the assumptions of `add`/`insert`/`deleteItem`. Recommended as the first experiment group in the next batch.
+
+---
+
+## 5. New Features and High-Conflict Candidates
+
+| Candidate | Scale | Judgment |
 |---|---|---|
-| 窗口主题 `6ba2c2b270` + `dce5a9464a` | `include/ghostty.h`、`AppDelegate.swift`、`TerminalWindow.swift`、Config | 与 Sidegeist 窗口/配置高度重叠，且依赖前面的 action 机制；保持 `P3 / awaiting_validation`，仅在明确需求时专项适配 |
-| tmux control mode（8 条） | Terminal/Termio 协议链 | 功能链不完整、与 Sidegeist 会话/标签行为重叠；保持 `P3` |
-| DECIC/DECDC/DECBI/DECFI `44a4911e91` | Terminal +297、stream +138 | 新 VT420 协议，无用户需求；保持 `P3 / on_user_request` |
-| iTerm2 配色（3 条） | 仅 `build.zig.zon` / `deps/packages.*` 数据更新 | 无代码行为变化；可在下次同步窗口单独评估，本轮不动 |
+| Window theme `6ba2c2b270` + `dce5a9464a` | `include/ghostty.h`, `AppDelegate.swift`, `TerminalWindow.swift`, Config | Highly overlaps with Sidegeist window/config and depends on the preceding action mechanism; keep `P3 / awaiting_validation` and only adapt specifically when there is an explicit need |
+| tmux control mode (8 entries) | Terminal/Termio protocol chain | Feature chain incomplete and overlaps with Sidegeist session/tab behavior; keep `P3` |
+| DECIC/DECDC/DECBI/DECFI `44a4911e91` | Terminal +297, stream +138 | New VT420 protocol, no user demand; keep `P3 / on_user_request` |
+| iTerm2 color schemes (3 entries) | Only `build.zig.zon` / `deps/packages.*` data updates | No code behavior change; can be evaluated separately in the next sync window, not touched this round |
 
 ---
 
-## 6. 实验：carriage-return pin 快路径
+## 6. Experiment: carriage-return pin fast path
 
-- 分支：`sync/ghostty-pagelist-cr-pin`
-- 提交：`f6cd5e4fd`（`git cherry-pick -x 8434d0900e`，2 行改动）
-- 改动：`Screen.cursorHorizontalAbsolute` 用列差移动缓存 cell 指针，避免 `rowAndCell()` 的 pin 查找。
-- 本地测试：`zig fmt --check src/terminal/Screen.zig` 通过；`zig build test-lib-vt -Dtest-filter=Screen` 通过；完整 `zig build test-lib-vt` 通过（exit 0）。
-- macOS 构建：`xcode-27` `release-railty.yml` run `44062908329`（workflow_dispatch，`create_draft_release=false`，不产生 Release / Cask 变更）。
-- 性能：`NOT_TESTED`（本机无法生成 `ghostty-bench`，Metal 缺失）；上游报告 1.02–1.06x 不能作为本机结论。
-- 结论：分支保留、**不合并 main**；等有 Xcode 的环境补齐 benchmark 后再决定。
+- Branch: `sync/ghostty-pagelist-cr-pin`
+- Commit: `f6cd5e4fd` (`git cherry-pick -x 8434d0900e`, 2-line change)
+- Change: `Screen.cursorHorizontalAbsolute` moves the cached cell pointer by column difference, avoiding the pin lookup in `rowAndCell()`.
+- Local tests: `zig fmt --check src/terminal/Screen.zig` passed; `zig build test-lib-vt -Dtest-filter=Screen` passed; full `zig build test-lib-vt` passed (exit 0).
+- macOS build: `xcode-27` `release-railty.yml` run `44062908329` (workflow_dispatch, `create_draft_release=false`, produces no Release / Cask changes).
+- Performance: `NOT_TESTED` (this machine cannot build `ghostty-bench`, Metal is missing); the upstream-reported 1.02–1.06x cannot be treated as a local conclusion.
+- Conclusion: keep the branch, **do not merge into main**; decide later once an environment with Xcode can supplement the benchmark.
 
-完整 lib-vt 结果：**通过**（`FULL_TEST_EXIT=0`）
-CI 结果：**成功**（run `44062908329`，`Build Railty.app (Apple Silicon)` 完成；manual build 不产生 Release/Cask 变更）
+Full lib-vt result: **Passed** (`FULL_TEST_EXIT=0`)
+CI result: **Success** (run `44062908329`, `Build Railty.app (Apple Silicon)` completed; a manual build produces no Release/Cask changes)
 
 ---
 
-## 7. 最终问题回答
+## 7. Final Questions Answered
 
-1. **149 个 DEFER 中，多少继续暂缓？** 全部 149 本轮继续暂缓；其中 14 条 `P1` 需要专门排期（12 条 Critical Bug、nullability、snapshot/prune 相关）。
-2. **多少可以安全纳入？** 本轮 0 条。没有任何候选同时满足“可达路径 + 正确性测试 + 本机性能数据”。
-3. **多少实际已经不需要？** 0 条可直接改 `SKIP`；75 条 libghostty-vt ABI 只是对当前 macOS 应用无收益，仍需保留给 Sidegeist/嵌入场景。
-4. **哪些需要等待 Zig 升级？** 4 条 `toolchain-zig-upgrade`；PageList/RefCountedSet 各链本身不依赖 0.17.1。
-5. **哪些需要等待 Sidegeist？** 75 条 `libghostty-vt-1.0-abi`，以及窗口主题、tmux 等高冲突功能组。
-6. **哪些性能优化可以独立引入？** 已验证可独立编译的只有 `8434d0900e`（本轮实验）；`96d379822f`、`ce920296c8` 也相对独立，但未实验。
-7. **哪些功能存在 Sidegeist 冲突？** 窗口主题（2）、tmux（8）、nullability 的 `TerminalWindow.swift` 部分、`terminal-misc-refactor` 中共用文件。
-8. **哪些候选已通过 macOS ARM64 构建？** 本轮实验分支 `f6cd5e4fd` 已通过 run `44062908329`；`v0.1.4` 正式发布构建全部通过。
-9. **哪些完成运行时验证？** 0；本机无 GUI/Xcode，全部标记 `NOT_TESTED`。
-10. **哪些取得实测性能收益？** 本机 0 条；上游提交内的 benchmark 数据仅作参考，未复现。
-11. **下一位 Worker 继续什么？** 先做 `terminal-refcounted-set` 整链与 `terminal-pagelist-prune-memory`（P1），再评估 PageList 容量链；每一步都按 [benchmarks/2026-11-17-baseline.md](../benchmarks/2026-11-17-baseline.md) 的基准协议取数。
+1. **Of the 149 DEFERs, how many remain deferred?** All 149 remain deferred this round; 14 of them are `P1` and require dedicated scheduling (12 Critical Bug, nullability, snapshot/prune related).
+2. **How many can be safely included?** 0 this round. No candidate simultaneously satisfies "reachable path + correctness test + local performance data".
+3. **How many are actually no longer needed?** 0 can be directly changed to `SKIP`; the 75 libghostty-vt ABI entries merely have no benefit for the current macOS app and still need to be retained for Sidegeist/embedding scenarios.
+4. **Which ones need to wait for the Zig upgrade?** 4 `toolchain-zig-upgrade` entries; the PageList/RefCountedSet chains themselves do not depend on 0.17.1.
+5. **Which ones need to wait for Sidegeist?** The 75 `libghostty-vt-1.0-abi` entries, plus high-conflict feature groups such as window theme and tmux.
+6. **Which performance optimizations can be introduced independently?** Only `8434d0900e` has been verified to compile independently (this round's experiment); `96d379822f` and `ce920296c8` are also relatively independent but were not experimented with.
+7. **Which features have Sidegeist conflicts?** Window theme (2), tmux (8), the `TerminalWindow.swift` part of nullability, and shared files in `terminal-misc-refactor`.
+8. **Which candidates have passed a macOS ARM64 build?** This round's experiment branch `f6cd5e4fd` passed run `44062908329`; all `v0.1.4` official release builds passed.
+9. **Which ones have completed runtime validation?** 0; this machine has no GUI/Xcode, so all are marked `NOT_TESTED`.
+10. **Which ones achieved measured performance gains?** 0 locally; benchmark data in upstream commit messages is for reference only and was not reproduced.
+11. **What should the next worker continue with?** First the `terminal-refcounted-set` whole chain and `terminal-pagelist-prune-memory` (P1), then evaluate the PageList capacity chain; each step should collect data according to the benchmark protocol in [benchmarks/2026-11-17-baseline.md](../benchmarks/2026-11-17-baseline.md).
 
-## 8. 相关报告
+## 8. Related Reports
 
-- [Snapshot 适用性评估](2026-11-17-snapshot-assessment.md)
-- [macOS C API 可空性评估](2026-11-17-macos-nullability-assessment.md)
-- [性能基线（NOT_TESTED 记录）](../benchmarks/2026-11-17-baseline.md)
-- [集成完成报告](2026-11-17-integration-complete.md)
+- [Snapshot applicability assessment](2026-11-17-snapshot-assessment.md)
+- [macOS C API nullability assessment](2026-11-17-macos-nullability-assessment.md)
+- [Performance baseline (NOT_TESTED records)](../benchmarks/2026-11-17-baseline.md)
+- [Integration complete report](2026-11-17-integration-complete.md)

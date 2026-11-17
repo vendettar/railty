@@ -1,11 +1,11 @@
 # PageList Prune Memory Fix — Applicability & Experiment
 
-> **历史记录（重写前）**：本报告中的评估基线 `0d80ab1bd` 与实验分支提交 `04c6deea1` 已不在当前 `main` 历史中；实际合并提交为 `6016fb005`。当前 SHA 见 [2026-11-17-v1.2-lite.md](2026-11-17-v1.2-lite.md#当前-sha强推后)。
+> **Historical record (before the rewrite)**: The assessment baseline `0d80ab1bd` and experiment branch commit `04c6deea1` in this report are no longer in the current `main` history; the actual merge commit is `6016fb005`. See [2026-11-17-v1.2-lite.md](2026-11-17-v1.2-lite.md#current-sha-after-force-push) for the current SHA.
 
 **Upstream commit:** `d0addb9cdf9a30901bd953421dccada3bf610d7c`
 **Subject:** `terminal: keep the pruned page's memory when grow prunes by lines`
 **Upstream issue / PR:** #15157 / #15173
-**Assessed:** 2026-11-17 against Railty `0d80ab1bd`（重写前）
+**Assessed:** 2026-11-17 against Railty `0d80ab1bd` (before the rewrite)
 
 ## 1. Problem and upstream fix
 
@@ -32,8 +32,8 @@ The ledger's original `DEFER` reason claimed a dependency on the unmerged carrie
 
 ## 3. Adaptation
 
-Branch: `sync/ghostty-pagelist-prune-memory`（已删除）
-Commit: `04c6deea1`（实验分支历史；合并提交 `6016fb005`）
+Branch: `sync/ghostty-pagelist-prune-memory` (deleted)
+Commit: `04c6deea1` (experiment branch history; merge commit `6016fb005`)
 
 - Added the `DestroyMode` enum and threaded it through `destroyNode`, `destroyNodeExt`, `erasePage`, `Limits.enforce`, `PageAllocation.deinit`, and `Builder.deinit`.
 - Line-limit pruning in `grow()` uses `.retain`; shrink/byte-limit/teardown paths use `.reclaim`.

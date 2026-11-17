@@ -1,6 +1,6 @@
 # macOS C API Nullability — Compatibility Assessment
 
-> **历史记录（重写前）**：评估基线 `ab61a1099` 已不在当前 `main` 历史中。当前 SHA 见 [2026-11-17-v1.2-lite.md](2026-11-17-v1.2-lite.md#当前-sha强推后)。
+> **Historical record (before the rewrite)**: The assessment baseline `ab61a1099` is no longer in the current `main` history. See [2026-11-17-v1.2-lite.md](2026-11-17-v1.2-lite.md#current-sha-after-force-push) for the current SHA.
 
 **Upstream commit:** `0e067ded703c4212248daf996f97c62f2f13114a`
 **Subject:** `core: declare pointer nullability in ghostty.h`

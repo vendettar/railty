@@ -95,9 +95,9 @@
       "priority": "P1",
       "revisit_trigger": "on_user_request",
       "validation_plan": "Port the full tmux chain only if tmux control mode is requested; test against real tmux sessions",
-      "review_status": "awaiting_validation",
+      "review_status": "candidate_next_batch",
       "last_reassessed_at": "2026-11-17",
-      "notes": "Incomplete feature chain; overlaps Terminal/Termio and Sidegeist session UI."
+      "notes": "The issue is reachable in Railty (tmux control mode is compiled in and enabled). On sync/ghostty-tmux-hardening, all existing notification IDs were adapted (a08a3f354) and the list-windows arena cleanup was ported; tmux tests and the macOS build (run 44136063086) passed; not merged."
     },
     {
       "source": "ghostty",
@@ -143,9 +143,9 @@
       "priority": "P3",
       "revisit_trigger": "on_user_request",
       "validation_plan": "Port the full tmux chain only if tmux control mode is requested; test against real tmux sessions",
-      "review_status": "awaiting_validation",
+      "review_status": "candidate_next_batch",
       "last_reassessed_at": "2026-11-17",
-      "notes": "Incomplete feature chain; overlaps Terminal/Termio and Sidegeist session UI."
+      "notes": "%output now parses bytes safely (d754c5520), preserving non-UTF-8 raw bytes and empty output; tests and the macOS build passed; not merged."
     },
     {
       "source": "ghostty",
@@ -392,36 +392,36 @@
       "sha": "faa346b068361c47826b653af5e4a526e5a4e957",
       "topic": "terminal-perf-pagelist-fastpath",
       "group": "terminal-print-fastpath",
-      "priority": "P1",
+      "priority": "P2",
       "revisit_trigger": "manual_dedicated_port",
       "validation_plan": "Port mixed-width print fast path with all follow-up fixes; run terminal/screen tests, Unicode/wide-char checks, stream benchmark",
       "review_status": "awaiting_dependencies",
       "last_reassessed_at": "2026-11-17",
-      "notes": "Several regressions were fixed later in the same chain."
+      "notes": "Follow-up regression fix for the Print Fast Path optimization (68750a1be2); the baseline optimization has not landed in Railty, so this is not a severe bug in the current product. Re-evaluate when porting the whole chain."
     },
     {
       "source": "ghostty",
       "sha": "22b84514411aab13ce71c09052a10c76380eaf4b",
       "topic": "terminal-perf-pagelist-fastpath",
       "group": "terminal-print-fastpath",
-      "priority": "P1",
+      "priority": "P2",
       "revisit_trigger": "manual_dedicated_port",
       "validation_plan": "Port packed-u128 Style chain; run terminal/style/ABI tests and SGR-heavy stream benchmark; macOS build",
       "review_status": "awaiting_dependencies",
       "last_reassessed_at": "2026-11-17",
-      "notes": "Touches Style storage, SGR handling and the C style API; wide blast radius."
+      "notes": "Follow-up regression fix for the Print Fast Path optimization (68750a1be2); the baseline optimization has not landed in Railty, so this is not a severe bug in the current product. Re-evaluate when porting the whole chain."
     },
     {
       "source": "ghostty",
       "sha": "4c92f80954b1d563c148d77a051394fd2d39de60",
       "topic": "terminal-perf-pagelist-fastpath",
       "group": "terminal-print-fastpath",
-      "priority": "P1",
+      "priority": "P2",
       "revisit_trigger": "manual_dedicated_port",
       "validation_plan": "Port mixed-width print fast path with all follow-up fixes; run terminal/screen tests, Unicode/wide-char checks, stream benchmark",
       "review_status": "awaiting_dependencies",
       "last_reassessed_at": "2026-11-17",
-      "notes": "Several regressions were fixed later in the same chain."
+      "notes": "Follow-up regression fix for the Print Fast Path optimization (68750a1be2); the baseline optimization has not landed in Railty, so this is not a severe bug in the current product. Re-evaluate when porting the whole chain."
     },
     {
       "source": "ghostty",
@@ -1232,48 +1232,48 @@
       "sha": "636c1d780568db5c5fe299b7105fcf6b4c74c068",
       "topic": "terminal-refcounted-set",
       "group": "terminal-refcounted-set",
-      "priority": "P1",
+      "priority": "P2",
       "revisit_trigger": "manual_dedicated_port",
       "validation_plan": "Port all 7 commits in topology order; run RefCountedSet tests + kitty/hyperlink stress; benchmark image churn",
       "review_status": "awaiting_dependencies",
       "last_reassessed_at": "2026-11-17",
-      "notes": "Has a prerequisite refactor and later correctness fixes; do not cherry-pick partially."
+      "notes": "Follow-up correctness fix for RefCountedSet dead-ID reuse (d03983f02c); the baseline optimization has not landed in Railty, so this is not a severe bug in the current product. Re-evaluate when porting the whole chain."
     },
     {
       "source": "ghostty",
       "sha": "738d8f7f5b574b2348e0ba635a0f00a0d51c35fe",
       "topic": "terminal-refcounted-set",
       "group": "terminal-refcounted-set",
-      "priority": "P1",
+      "priority": "P2",
       "revisit_trigger": "manual_dedicated_port",
       "validation_plan": "Port all 7 commits in topology order; run RefCountedSet tests + kitty/hyperlink stress; benchmark image churn",
       "review_status": "awaiting_dependencies",
       "last_reassessed_at": "2026-11-17",
-      "notes": "Has a prerequisite refactor and later correctness fixes; do not cherry-pick partially."
+      "notes": "Follow-up correctness fix for RefCountedSet dead-ID reuse (d03983f02c); the baseline optimization has not landed in Railty, so this is not a severe bug in the current product. Re-evaluate when porting the whole chain."
     },
     {
       "source": "ghostty",
       "sha": "38f4a710e3e6a218342915bf9d29eab10281a702",
       "topic": "terminal-refcounted-set",
       "group": "terminal-refcounted-set",
-      "priority": "P1",
+      "priority": "P2",
       "revisit_trigger": "manual_dedicated_port",
       "validation_plan": "Port all 7 commits in topology order; run RefCountedSet tests + kitty/hyperlink stress; benchmark image churn",
       "review_status": "awaiting_dependencies",
       "last_reassessed_at": "2026-11-17",
-      "notes": "Has a prerequisite refactor and later correctness fixes; do not cherry-pick partially."
+      "notes": "Follow-up correctness fix for RefCountedSet dead-ID reuse (d03983f02c); the baseline optimization has not landed in Railty, so this is not a severe bug in the current product. Re-evaluate when porting the whole chain."
     },
     {
       "source": "ghostty",
       "sha": "31a52992f12710f0382661a481fce46a966a7ea1",
       "topic": "terminal-refcounted-set",
       "group": "terminal-refcounted-set",
-      "priority": "P1",
+      "priority": "P2",
       "revisit_trigger": "manual_dedicated_port",
       "validation_plan": "Port all 7 commits in topology order; run RefCountedSet tests + kitty/hyperlink stress; benchmark image churn",
       "review_status": "awaiting_dependencies",
       "last_reassessed_at": "2026-11-17",
-      "notes": "Has a prerequisite refactor and later correctness fixes; do not cherry-pick partially."
+      "notes": "Follow-up correctness fix for RefCountedSet dead-ID reuse (d03983f02c); the baseline optimization has not landed in Railty, so this is not a severe bug in the current product. Re-evaluate when porting the whole chain."
     },
     {
       "source": "ghostty",
@@ -1604,12 +1604,12 @@
       "sha": "9b848b0f5c1f5e18611d89a570540df9ad2333d1",
       "topic": "libghostty-vt-and-deps",
       "group": "snapshot-page-capacity",
-      "priority": "P1",
+      "priority": "P2",
       "revisit_trigger": "on_macos_snapshot_consumer",
       "validation_plan": "Re-assess if the macOS app adopts ghostty_snapshot_*; until then only lib-vt tests and ghostty-bench +terminal-snapshot apply",
       "review_status": "no_runtime_path",
       "last_reassessed_at": "2026-11-17",
-      "notes": "macOS restore uses TerminalRestorableState (Codable), not the snapshot C API; no reachable runtime path today (verified 2026-11-17)."
+      "notes": "The macOS app does not use ghostty_snapshot_*, so there is no runtime path today; lowered to P2 and to be re-evaluated when the app adopts snapshot restore or an embedding scenario."
     },
     {
       "source": "ghostty",

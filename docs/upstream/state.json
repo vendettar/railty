@@ -71,17 +71,17 @@
     "last_reviewed_at": "2026-11-17",
     "total": 148,
     "by_priority": {
-      "P1": 13,
-      "P2": 32,
-      "P3": 103
+      "P2": 40,
+      "P3": 103,
+      "P1": 5
     },
     "by_status": {
-      "awaiting_upstream": 75,
-      "awaiting_dependencies": 45,
-      "awaiting_validation": 22,
       "awaiting_toolchain": 4,
-      "no_runtime_path": 1,
-      "candidate_next_batch": 1
+      "awaiting_upstream": 75,
+      "awaiting_validation": 20,
+      "candidate_next_batch": 3,
+      "awaiting_dependencies": 45,
+      "no_runtime_path": 1
     },
     "satisfied_triggers": 0,
     "report": "docs/upstream/reviews/2026-11-17-deferred-review.md",
@@ -100,14 +100,34 @@
       "validation": "PageList tests passed, macOS arm64 build passed, measured 1.65x (1,000 lines) / 1.71x (10,000 lines) on M4 Pro; RSS 11.06 -> 10.90 MB",
       "merged": true,
       "benchmark_report": "docs/upstream/benchmarks/2026-11-17-baseline.md"
+    },
+    "tmux_hardening_experiment": {
+      "branch": "sync/ghostty-tmux-hardening",
+      "head_commit": "1eca92330ea51f0c8778bfad55ec603f13e877f7",
+      "commits": [
+        "a08a3f354",
+        "d754c5520",
+        "1eca92330"
+      ],
+      "upstream_shas": [
+        "7e4cc4fae011dc3a133ce625d6cf6f0d546be64a",
+        "51e7fe51db607773a651b161527beb10ce92a611"
+      ],
+      "ci_run": 44136063086,
+      "ci_result": "success",
+      "validation": "tmux unit tests passed, macOS arm64 build passed, runtime NOT_TESTED",
+      "merged": false
     }
   },
   "active_task": {
     "status": "completed",
     "branch": "main",
-    "description": "Upstream Sync v1.2 Lite complete: prune-memory fix merged after local measurement (1.65-1.71x line-limited throughput, RSS flat); benchmark options and CI Python tests in place. History squashed; force-publish pending user action.",
-    "next_recommended_branch": null,
-    "remaining_priority_groups": []
+    "description": "Upstream Sync v1.3: tmux oversized-id/arena-leak and %output byte-safety fixes adapted and validated on sync/ghostty-tmux-hardening; DEFER priorities corrected (P1 5). Awaiting integration decision.",
+    "next_recommended_branch": "sync/ghostty-tmux-hardening",
+    "remaining_priority_groups": [
+      "tmux hardening integration decision",
+      "macos-c-api-nullability (on demand)"
+    ]
   },
   "pending_review_ranges": [],
   "notes": [

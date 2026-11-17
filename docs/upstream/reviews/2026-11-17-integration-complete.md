@@ -1,117 +1,117 @@
 # Railty Upstream Integration Complete (2026-11-17)
 
-本报告是 [2026-11-17-initial-audit.md](2026-11-17-initial-audit.md) 的**后续集成报告**，记录 45 项 `INCLUDE` 上游修复从移植、验证、合入 `main` 到发布 `v0.1.3` / `v0.1.4` 的最终状态。
+This report is the **follow-up integration report** to [2026-11-17-initial-audit.md](2026-11-17-initial-audit.md). It records the final state of the 45 `INCLUDE` upstream fixes across porting, validation, merge into `main`, and release as `v0.1.3` / `v0.1.4`.
 
-> **给下一位 Worker 的结论**：
-> - 45 项 `INCLUDE` 已**全部**合入 `main`，`ledger.jsonl` 中 `pending = 0`。
-> - **不要**按初次审查报告第 4 节重新 Cherry-pick 任何提交，否则会产生重复补丁与冲突。
-> - 下一次上游同步只需从 `ghostty/main = 5ebe501a63425b13d9952e8c54682c046386e5af` 之后开始增量审查，并先运行 `./tools/upstream/check.sh`。
+> **Conclusion for the next worker**:
+> - All 45 `INCLUDE` items have **fully** merged into `main`; `pending = 0` in `ledger.jsonl`.
+> - **Do not** re-cherry-pick any commit from Section 4 of the initial audit report, otherwise duplicate patches and conflicts will result.
+> - The next upstream sync only needs to start incremental review after `ghostty/main = 5ebe501a63425b13d9952e8c54682c046386e5af`, and should first run `./tools/upstream/check.sh`.
 
 ---
 
-## 1. 集成结果总览
+## 1. Integration Results Overview
 
-| 指标 | 数值 |
+| Metric | Value |
 |---|---:|
-| 上游审查提交（Ghostty `v1.4.0..5ebe501a63`） | 395 |
-| `INCLUDE` 决策 | 45 |
-| 已集成（`integrated`） | 44 |
-| 已适配后集成（`adapted`） | 1 |
-| 仍待移植（`pending`） | **0** |
+| Upstream commits reviewed (Ghostty `v1.4.0..5ebe501a63`) | 395 |
+| `INCLUDE` decisions | 45 |
+| Integrated (`integrated`) | 44 |
+| Integrated after adaptation (`adapted`) | 1 |
+| Still pending porting (`pending`) | **0** |
 | `DEFER` | 149 |
 | `SKIP` | 201 |
 | `NEEDS_REVIEW` / `ALREADY_INCLUDED` | 0 / 0 |
 
-### 已集成提交的类别与风险
+### Categories and Risks of Integrated Commits
 
-| 类别 | 数量 | 风险 |
+| Category | Count | Risk |
 |---|---:|---|
-| `Critical Bug` | 30 | `low` 40 / `medium` 5（合计） |
-| `macOS Bug` | 6 | 同上 |
-| `Security` | 3 | 同上 |
-| `Tests` | 3 | 同上 |
-| `Build / Toolchain` | 2 | 同上 |
-| `Performance` | 1 | 同上 |
+| `Critical Bug` | 30 | `low` 40 / `medium` 5 (combined) |
+| `macOS Bug` | 6 | Same as above |
+| `Security` | 3 | Same as above |
+| `Tests` | 3 | Same as above |
+| `Build / Toolchain` | 2 | Same as above |
+| `Performance` | 1 | Same as above |
 
-全部 45 条的 `integration` 为 `integrated`/`adapted`，`validation` 均为 `macos-build-passed`，且每条 `railty_commit` 都可在 `main` 历史中找到（`tools/upstream/check.sh` 已自动校验）。
+All 45 entries have `integration` of `integrated`/`adapted`, `validation` of `macos-build-passed`, and every `railty_commit` can be found in the `main` history (`tools/upstream/check.sh` validates this automatically).
 
-### 需要特别记录的 3 个适配点
+### 3 Adaptation Points That Must Be Recorded
 
-1. **`9899c0707767d93ad26e587c896a9a2761273b26`（Darwin memset quirk）**：上游同时修改 `.github/workflows/test.yml`，该文件属于已禁用的上游工作流，移植时剥离，仅保留 `build.zig` 与 `src/build/libsystem_override.sh` 修复，台账记为 `adapted`。
-2. **`f4830b2f18785aba11af9d92239f35c6e211abca`（PageList 扩容期间完整性检查）**：`src/terminal/Terminal.zig` 末尾与已 `DEFER` 的 `ce920296c` 测试上下文冲突；仅保留该提交自身的两个 resize 回归测试，移除不属于该提交的 `eraseDisplay` 测试。
-3. **`fd29936f09`（Surface `@MainActor` 隔离）**：已核查 Sidegeist、App Intents、AppleScript、IPC 与 `SidebarTabManager` 调用方，全部在 `@MainActor` 上下文，无需额外 `MainActor.assumeIsolated`。
+1. **`9899c0707767d93ad26e587c896a9a2761273b26` (Darwin memset quirk)**: Upstream also modified `.github/workflows/test.yml`; that file belongs to a disabled upstream workflow, so it was stripped during porting, keeping only the `build.zig` and `src/build/libsystem_override.sh` fixes, and the ledger records it as `adapted`.
+2. **`f4830b2f18785aba11af9d92239f35c6e211abca` (PageList integrity check during growth)**: The end of `src/terminal/Terminal.zig` conflicts with the test context of the already `DEFER`red `ce920296c`; only the two resize regression tests belonging to this commit itself were kept, and the `eraseDisplay` test that does not belong to this commit was removed.
+3. **`fd29936f09` (Surface `@MainActor` isolation)**: Sidegeist, App Intents, AppleScript, IPC, and `SidebarTabManager` callers were all checked and are all in `@MainActor` context, so no extra `MainActor.assumeIsolated` is needed.
 
 ---
 
-## 2. Git 历史与合并方式
+## 2. Git History and Merge Method
 
-- 同步工作全部在 `sync/ghostty-fixes-2026-11` 完成，使用 `git cherry-pick -x` 保留来源追踪。
-- 合入 `main` 时采用**线性 rebase**（无 merge commit），历史保持单线。
-- 同步分支在合入并推送后已删除（本地与远端）。
+- All sync work was completed on `sync/ghostty-fixes-2026-11`, using `git cherry-pick -x` to retain source tracking.
+- Merging into `main` used a **linear rebase** (no merge commit), keeping the history single-line.
+- The sync branch was deleted after merging and pushing (both local and remote).
 
-`main` 上的关键提交：
+Key commits on `main`:
 
-| Commit | 内容 |
+| Commit | Content |
 |---|---|
-| `a4bacdff5` | 台账更新：45 条 `INCLUDE` 标记 `macos-build-passed`；`state.json` 记录验证结果 |
-| `21ceebc39` | macOS 应用菜单与退出确认改名（`Ghostty` → `Railty`） |
-| `be61dbaeb` | 用户可见文案品牌清理（窗口标题、弹窗、Shortcuts/AppleScript/IPC、Dock Tile 插件） |
+| `a4bacdff5` | Ledger update: 45 `INCLUDE` entries marked `macos-build-passed`; `state.json` records the validation results |
+| `21ceebc39` | Renamed macOS app menu and quit confirmation (`Ghostty` → `Railty`) |
+| `be61dbaeb` | User-visible copy branding cleanup (window titles, dialogs, Shortcuts/AppleScript/IPC, Dock Tile plugin) |
 
-## 3. 发布结果
+## 3. Release Results
 
-| 版本 | Tag 指向 | 发布工作流 | 结果 |
+| Version | Tag points to | Release workflow | Result |
 |---|---|---|---|
-| `v0.1.3` | `a4bacdff5` | [run 44050630021](https://github.com/vendettar/railty/actions/runs/44050630021) | 成功：Release 已发布，Homebrew Cask 更新为 `0.1.3`（sha256 `102d95ab…`） |
-| `v0.1.4` | `be61dbaeb` | [run 44053591222](https://github.com/vendettar/railty/actions/runs/44053591222) | 成功：Release 已发布，Homebrew Cask 更新为 `0.1.4`（sha256 `8a8fcfe9…`） |
+| `v0.1.3` | `a4bacdff5` | [run 44050630021](https://github.com/vendettar/railty/actions/runs/44050630021) | Success: Release published, Homebrew Cask updated to `0.1.3` (sha256 `102d95ab…`) |
+| `v0.1.4` | `be61dbaeb` | [run 44053591222](https://github.com/vendettar/railty/actions/runs/44053591222) | Success: Release published, Homebrew Cask updated to `0.1.4` (sha256 `8a8fcfe9…`) |
 
-- `v0.1.3` 包含全部 45 项上游修复。
-- `v0.1.4` 仅包含品牌文案清理，不改变终端核心行为。
-- 正式发布均通过 `release-railty.yml` 在 `xcode-27` 自托管 Runner 完成 `GhosttyKit.xcframework` + `Railty.app` 编译、打包、可选签名/公证，并自动更新 `vendettar/homebrew-railty`。
+- `v0.1.3` contains all 45 upstream fixes.
+- `v0.1.4` contains only branding copy cleanup and does not change terminal core behavior.
+- Both official releases completed `GhosttyKit.xcframework` + `Railty.app` compilation, packaging, and optional signing/notarization via `release-railty.yml` on the `xcode-27` self-hosted Runner, and automatically updated `vendettar/homebrew-railty`.
 
-## 4. 验证矩阵
+## 4. Validation Matrix
 
-| 验证项 | 范围 | 结果 |
+| Validation Item | Scope | Result |
 |---|---|---|
-| `zig build test-lib-vt` | libghostty-vt 全量测试 | 通过 |
-| `zig test src/os/path.zig` | 路径空终止符修复 | 4/4 通过 |
-| `zig fmt --check build.zig src/` | 格式 | 通过 |
-| `swiftc -parse` | 所有修改过的 `.swift` | 通过 |
-| `xmllint --noout` | 所有修改过的 `.xib` | 通过 |
-| `git diff --check` | 空白错误 | 通过 |
-| macOS Release 构建 | `xcode-27`，run 44042567498 | 成功（同步分支代码全量） |
-| 发布构建 | `v0.1.3` / `v0.1.4` tag 推送 | 两次均成功（run 44050630021 / 44053591222） |
+| `zig build test-lib-vt` | Full libghostty-vt test suite | Passed |
+| `zig test src/os/path.zig` | Path null terminator fix | 4/4 passed |
+| `zig fmt --check build.zig src/` | Formatting | Passed |
+| `swiftc -parse` | All modified `.swift` | Passed |
+| `xmllint --noout` | All modified `.xib` | Passed |
+| `git diff --check` | Whitespace errors | Passed |
+| macOS Release build | `xcode-27`, run 44042567498 | Success (full sync branch code) |
+| Release build | `v0.1.3` / `v0.1.4` tag pushes | Both successful (run 44050630021 / 44053591222) |
 
-未执行：GUI 运行时手测（Tab 拖拽、Sidebar、Git Panel 等）。发布构建成功不等于运行时行为验证，后续如改动涉及 UI/Window/Input，仍需按 [README.md](../README.md) 第 9 节补做。
+Not performed: GUI runtime manual testing (tab dragging, Sidebar, Git Panel, etc.). A successful release build does not equal runtime behavior validation; if subsequent changes involve UI/Window/Input, they still need to be supplemented per Section 9 of [README.md](../README.md).
 
-## 5. 台账与状态文件的一致性
+## 5. Consistency of the Ledger and State Files
 
-- [state.json](../state.json) 现记录：`railty.head_sha = be61dbaeb…`、`latest_release_tag = v0.1.4`、`last_validated_commit = be61dbaeb…`、`active_task.status = completed`、`sync_branch = null`。
-- [tools/upstream/check.sh](../../../tools/upstream/check.sh) 新增 **State Consistency** 检查，运行时会对以下漂移直接告警：
-  1. `railty.head_sha` 落后于真实 `HEAD` 且中间存在代码改动（仅 `docs/`、`tools/upstream/` 与 `AGENTS.md` 的协议/文档漂移会作为提示输出，不算告警）；
-  2. `latest_release_tag` 落后于 `origin` 上最新的 `vX.Y.Z` Tag；
-  3. 最新 Release Tag 不是 `HEAD` 的祖先；
-  4. 台账中 `integrated`/`adapted` 记录的 `railty_commit` 缺失或不在 `HEAD` 历史中。
-- 说明：`railty.head_sha` 无法指向"包含自身的提交"，因此提交本报告后会出现一次 docs-only 漂移提示，这是预期行为。
+- [state.json](../state.json) now records: `railty.head_sha = be61dbaeb…`, `latest_release_tag = v0.1.4`, `last_validated_commit = be61dbaeb…`, `active_task.status = completed`, `sync_branch = null`.
+- [tools/upstream/check.sh](../../../tools/upstream/check.sh) adds a **State Consistency** check, which warns directly at runtime about the following drift:
+  1. `railty.head_sha` is behind the real `HEAD` and there are code changes in between (protocol/documentation drift limited to `docs/`, `tools/upstream/`, and `AGENTS.md` is output only as a notice, not a warning);
+  2. `latest_release_tag` is behind the newest `vX.Y.Z` tag on `origin`;
+  3. the latest Release tag is not an ancestor of `HEAD`;
+  4. the `railty_commit` of an `integrated`/`adapted` record in the ledger is missing or not in the `HEAD` history.
+- Note: `railty.head_sha` cannot point to "the commit that contains itself", so after committing this report there will be one docs-only drift notice; this is expected behavior.
 
-## 6. 模板化 `DEFER` 记录的抽样复核（2026-11-17）
+## 6. Sampling Re-Review of Templated `DEFER` Records (2026-11-17)
 
-初审中 75 条 `DEFER` 共用同一条 `libghostty-vt 1.0 / ABI / 依赖` 理由。本次复核方法与结果：
+75 `DEFER` entries in the initial audit shared the same `libghostty-vt 1.0 / ABI / dependency` reason. The method and results of this re-review:
 
-1. 用 `git show --name-only` 读取全部 75 个提交的真实改动路径；
-2. 按路径归类：`include/`、`src/terminal/c/`、`src/lib*`、`example/`、`dist/`、`pkg/`、`nix/`、`build.zig*`、`test/abi/`、`PACKAGING*`；
-3. 对触及 `src/terminal/PageList.zig`、`src/terminal/snapshot/*`、`src/terminal/lib.zig` 等共享核心的 35 条重点核对 diff。
+1. Read the real changed paths of all 75 commits using `git show --name-only`;
+2. Classify by path: `include/`, `src/terminal/c/`, `src/lib*`, `example/`, `dist/`, `pkg/`, `nix/`, `build.zig*`, `test/abi/`, `PACKAGING*`;
+3. For the 35 entries touching shared core such as `src/terminal/PageList.zig`, `src/terminal/snapshot/*`, `src/terminal/lib.zig`, the diffs were checked in detail.
 
-结论：
+Conclusions:
 
-- **73/75** 确认为 libghostty-vt 1.0 的 C ABI、Doxygen、示例、CMake/pkg-config、依赖清单或 ABI 测试基础设施，对 macOS 应用无直接运行时收益，`DEFER` 成立。
-- **2/75** 理由模板与实际 diff 不符，已在台账中修正（决策维持 `DEFER`）：
-  - `9b848b0f5c` — `libghostty: restored snapshot keeps final page capacity max size`（#15192）：实际是共享终端核心的快照恢复页容量分配优化，改动 `PageList.fillPooled` 与 `snapshot/{page,screen,snapshot}.zig`，与 C ABI 无关。类别已改为 `Performance`、`risk: medium`，列为**下一批候选**。
-  - `ef1649c853` — `ci: shard the unit tests, run one test shard per core`（#15169）：属于测试分片 runner 与 `build.zig`/CI 改动；其中 `PageList` 的 `pauseIntegrityChecks` 仅在 `slow_runtime_safety`（debug/test）下生效。理由已改为准确的测试构建描述。
-- 其余 `DEFER` 组（PageList 快路径 28 条、`terminal-misc-refactor` 12 条、tmux 8 条等）不在本次模板化范围内，维持原审查结论。
+- **73/75** confirmed to be libghostty-vt 1.0 C ABI, Doxygen, examples, CMake/pkg-config, dependency manifests, or ABI test infrastructure, with no direct runtime benefit to the macOS app; `DEFER` stands.
+- **2/75** had a reason template that did not match the actual diff and were corrected in the ledger (decision remains `DEFER`):
+  - `9b848b0f5c` — `libghostty: restored snapshot keeps final page capacity max size` (#15192): this is actually a snapshot restore page capacity allocation optimization in the shared terminal core, changing `PageList.fillPooled` and `snapshot/{page,screen,snapshot}.zig`, unrelated to the C ABI. Its category has been changed to `Performance`, `risk: medium`, and it is listed as a **next-batch candidate**.
+  - `ef1649c853` — `ci: shard the unit tests, run one test shard per core` (#15169): this belongs to the test sharding runner and `build.zig`/CI changes; the `PageList` `pauseIntegrityChecks` only takes effect under `slow_runtime_safety` (debug/test). The reason has been changed to an accurate description of the test build.
+- The remaining `DEFER` groups (PageList fast path 28 entries, `terminal-misc-refactor` 12 entries, tmux 8 entries, etc.) are outside this templated scope and retain the original audit conclusions.
 
-## 7. 下一步
+## 7. Next Steps
 
-1. 用 `./tools/upstream/check.sh` 从 `5ebe501a63` 之后做增量审查；发现 `Security` / `Critical Bug` 时按协议优先评估。
-2. 评估 `9b848b0f5c`（快照恢复页容量）是否纳入下一批；需要额外验证会话恢复路径。
-3. Zig `0.17.1` 升级（`1d84459682`）仍被 `DEFER`，升级 CI/CD 工具链前不要引入 0.17.1-only 语法。
-4. 若继续处理 `libghostty-vt-and-deps` 波次，建议等待 Sidegeist 大版本整合，避免与 C ABI 重构反复冲突。
+1. Use `./tools/upstream/check.sh` to review incrementally after `5ebe501a63`; when `Security` / `Critical Bug` is found, evaluate it first per protocol.
+2. Evaluate whether to include `9b848b0f5c` (snapshot restore page capacity) in the next batch; the session restore path needs extra validation.
+3. The Zig `0.17.1` upgrade (`1d84459682`) remains `DEFER`; do not introduce 0.17.1-only syntax before upgrading the CI/CD toolchain.
+4. If continuing with the `libghostty-vt-and-deps` wave, it is recommended to wait for a Sidegeist major version integration to avoid repeated conflicts with the C ABI refactor.
