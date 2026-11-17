@@ -216,16 +216,22 @@ elif state_head == head_sha:
 elif is_ancestor(state_head, "HEAD"):
     out, _ = git("diff", "--name-only", f"{state_head}..HEAD")
     changed = [f for f in out.splitlines() if f.strip()]
-    non_docs = [f for f in changed if not f.startswith("docs/")]
-    if non_docs:
+    # Protocol/docs/tooling commits do not change the validated app code.
+    protocol_prefixes = ("docs/", "tools/upstream/")
+    protocol_exact = {"AGENTS.md"}
+    code_changes = [
+        f for f in changed
+        if not f.startswith(protocol_prefixes) and f not in protocol_exact
+    ]
+    if code_changes:
         warnings.append(
             f"state.json head_sha {state_head[:10]} is behind HEAD {head_sha[:10]} "
-            f"with non-docs changes ({len(non_docs)}): {non_docs[:5]}"
+            f"with code changes ({len(code_changes)}): {code_changes[:5]}"
         )
     else:
         print(
             f"railty.head_sha {state_head[:10]} is behind HEAD {head_sha[:10]} "
-            f"(docs-only drift, {len(changed)} file(s))"
+            f"(protocol/docs-only drift, {len(changed)} file(s))"
         )
 else:
     warnings.append(

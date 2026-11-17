@@ -87,7 +87,7 @@
 
 - [state.json](../state.json) 现记录：`railty.head_sha = be61dbaeb…`、`latest_release_tag = v0.1.4`、`last_validated_commit = be61dbaeb…`、`active_task.status = completed`、`sync_branch = null`。
 - [tools/upstream/check.sh](../../../tools/upstream/check.sh) 新增 **State Consistency** 检查，运行时会对以下漂移直接告警：
-  1. `railty.head_sha` 落后于真实 `HEAD` 且中间存在非 `docs/` 改动（仅文档漂移会作为提示输出，不算告警）；
+  1. `railty.head_sha` 落后于真实 `HEAD` 且中间存在代码改动（仅 `docs/`、`tools/upstream/` 与 `AGENTS.md` 的协议/文档漂移会作为提示输出，不算告警）；
   2. `latest_release_tag` 落后于 `origin` 上最新的 `vX.Y.Z` Tag；
   3. 最新 Release Tag 不是 `HEAD` 的祖先；
   4. 台账中 `integrated`/`adapted` 记录的 `railty_commit` 缺失或不在 `HEAD` 历史中。
