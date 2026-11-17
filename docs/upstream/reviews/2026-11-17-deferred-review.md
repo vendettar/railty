@@ -1,5 +1,7 @@
 # Railty Deferred Review & High-Value Candidate Analysis (2026-11-17)
 
+> **历史记录（重写前）**：本报告基线 `ab61a1099` 与当时的分支 SHA 已不在当前 `main` 历史中，DEFER 数量也已从 149 降为 148。请勿把本报告当作当前操作起点；当前 SHA 与队列状态见 [2026-11-17-v1.2-lite.md](2026-11-17-v1.2-lite.md#当前-sha强推后) 与 `state.json`。
+
 本报告是 **Upstream Sync v1.1** 的审查与实验记录，基线为 `main = ab61a1099`、发布版 `v0.1.4`。它不推翻既有 395 条台账，而是给 149 条 `DEFER` 建立可执行的复审队列，并对高价值候选做适用性评估。
 
 ---

@@ -1,5 +1,7 @@
 # Snapshot Page Capacity Optimization — Applicability Assessment
 
+> **历史记录（重写前）**：评估基线 `ab61a1099` 已不在当前 `main` 历史中。当前 SHA 见 [2026-11-17-v1.2-lite.md](2026-11-17-v1.2-lite.md#当前-sha强推后)。
+
 **Upstream commit:** `9b848b0f5c1f5e18611d89a570540df9ad2333d1`
 **Subject:** `libghostty: restored snapshot keeps final page capacity max size`
 **Upstream issue:** #15192

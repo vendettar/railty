@@ -78,7 +78,7 @@
     "by_status": {
       "awaiting_upstream": 75,
       "awaiting_dependencies": 45,
-      "awaiting_validation": 23,
+      "awaiting_validation": 22,
       "awaiting_toolchain": 4,
       "no_runtime_path": 1,
       "candidate_next_batch": 1

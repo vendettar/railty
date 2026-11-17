@@ -1,9 +1,11 @@
 # PageList Prune Memory Fix — Applicability & Experiment
 
+> **历史记录（重写前）**：本报告中的评估基线 `0d80ab1bd` 与实验分支提交 `04c6deea1` 已不在当前 `main` 历史中；实际合并提交为 `6016fb005`。当前 SHA 见 [2026-11-17-v1.2-lite.md](2026-11-17-v1.2-lite.md#当前-sha强推后)。
+
 **Upstream commit:** `d0addb9cdf9a30901bd953421dccada3bf610d7c`
 **Subject:** `terminal: keep the pruned page's memory when grow prunes by lines`
 **Upstream issue / PR:** #15157 / #15173
-**Assessed:** 2026-11-17 against Railty `0d80ab1bd`
+**Assessed:** 2026-11-17 against Railty `0d80ab1bd`（重写前）
 
 ## 1. Problem and upstream fix
 
@@ -30,8 +32,8 @@ The ledger's original `DEFER` reason claimed a dependency on the unmerged carrie
 
 ## 3. Adaptation
 
-Branch: `sync/ghostty-pagelist-prune-memory`
-Commit: `04c6deea1`
+Branch: `sync/ghostty-pagelist-prune-memory`（已删除）
+Commit: `04c6deea1`（实验分支历史；合并提交 `6016fb005`）
 
 - Added the `DestroyMode` enum and threaded it through `destroyNode`, `destroyNodeExt`, `erasePage`, `Limits.enforce`, `PageAllocation.deinit`, and `Builder.deinit`.
 - Line-limit pruning in `grow()` uses `.retain`; shrink/byte-limit/teardown paths use `.reclaim`.
@@ -55,7 +57,7 @@ Diff: only `src/terminal/PageList.zig`, 43 insertions / 17 deletions.
 
 Environment: Xcode 27.2 + Metal Toolchain 27B47, Zig 0.17.1, `ReleaseFast`, 1 GiB newline-terminated 199-column ASCII, 50×200 terminal, byte limit raised to 10 GB so the line limit is the active constraint.
 
-| Scenario | Baseline | Prune (`04c6deea1`) | Speedup |
+| Scenario | Baseline | Prune (experiment = merged code) | Speedup |
 |---|---:|---:|---:|
 | max-lines 1,000 | 674 MB/s | 1,115 MB/s | **1.65x** |
 | max-lines 10,000 | 729 MB/s | 1,244 MB/s | **1.71x** |
