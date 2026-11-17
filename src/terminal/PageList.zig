@@ -1214,7 +1214,7 @@ pub fn clone(
     }
 
     // A clone can copy more history than its inherited line limit.
-    result.limits.enforce(&result, .lines);
+    result.limits.enforce(&result, .lines, .reclaim);
 
     result.assertIntegrity();
     return result;
@@ -1328,7 +1328,7 @@ pub fn resize(self: *PageList, opts: Resize) Allocator.Error!void {
         try self.resizeWithoutReflow(opts);
         // Shrinking the active row count turns former active rows into
         // scrollback even without reflow, which can cross the line limit.
-        self.limits.enforce(self, .lines);
+        self.limits.enforce(self, .lines, .reclaim);
         return;
     }
 
@@ -1392,7 +1392,7 @@ pub fn resize(self: *PageList, opts: Resize) Allocator.Error!void {
     // Column reflow can change the physical history row count, and a row
     // resize can move the active boundary. Both may expose whole old pages
     // that are now eligible for line-limit pruning.
-    self.limits.enforce(self, .lines);
+    self.limits.enforce(self, .lines, .reclaim);
 }
 
 /// Resize the pagelist with reflow by adding or removing columns.
@@ -3426,7 +3426,7 @@ fn trimTrailingBlankRows(
 
         row_pin.node.page().size.rows -= 1;
         if (row_pin.node.page().size.rows == 0) {
-            self.erasePage(row_pin.node);
+            self.erasePage(row_pin.node, .reclaim);
         } else {
             row_pin.node.page().assertIntegrity();
         }
@@ -4155,7 +4155,7 @@ pub fn setMaxBytes(self: *PageList, max: ?usize) void {
     defer self.assertIntegrity();
 
     self.limits.set(.bytes, max);
-    self.limits.enforce(self, .bytes);
+    self.limits.enforce(self, .bytes, .reclaim);
     if (self.limits.bytes.explicit == 0) self.viewport = .active;
 }
 
@@ -4169,7 +4169,7 @@ pub fn setMaxLines(self: *PageList, max: ?usize) void {
     defer self.assertIntegrity();
 
     self.limits.set(.lines, max);
-    self.limits.enforce(self, .lines);
+    self.limits.enforce(self, .lines, .reclaim);
 }
 
 /// Grow the active area by exactly one row.
@@ -4202,7 +4202,10 @@ pub fn grow(self: *PageList) Allocator.Error!?*List.Node {
 
         // Growing inside the last page moves the active boundary without
         // allocating; that alone can make the first page wholly historical.
-        self.limits.enforce(self, .lines);
+        // At a steady line limit this prunes one page for every page of
+        // output, and the next new page takes the pruned item straight
+        // back out of the pool, so keep its memory.
+        self.limits.enforce(self, .lines, .retain);
         return null;
     }
 
@@ -4307,7 +4310,7 @@ pub fn grow(self: *PageList) Allocator.Error!?*List.Node {
 
         // Byte-limit recycling may leave history above the independent line
         // limit, so enforce it after the recycled page becomes the new tail.
-        self.limits.enforce(self, .lines);
+        self.limits.enforce(self, .lines, .reclaim);
         return first;
     }
 
@@ -4327,8 +4330,9 @@ pub fn grow(self: *PageList) Allocator.Error!?*List.Node {
     self.total_rows += 1;
 
     // Appending a page can cross the line limit and can make the oldest
-    // active-boundary page wholly historical.
-    self.limits.enforce(self, .lines);
+    // active-boundary page wholly historical. As in the fast path above,
+    // the next new page reuses the pruned item, so keep its memory.
+    self.limits.enforce(self, .lines, .retain);
     return next_node;
 }
 
@@ -4600,6 +4604,7 @@ pub const PageAllocation = struct {
             &self.destination.pool,
             node,
             null,
+            .reclaim,
         );
         self.node = null;
     }
@@ -5272,13 +5277,29 @@ fn compressPage(self: *PageList, node: *List.Node) bool {
 /// responsible for accounting for the removed rows. This function only
 /// updates `page_size` (byte accounting), not row accounting.
 fn destroyNode(self: *PageList, node: *List.Node) void {
-    destroyNodeExt(&self.pool, node, &self.page_size);
+    destroyNodeExt(&self.pool, node, &self.page_size, .reclaim);
 }
+
+/// What `destroyNodeExt` does with the memory of a pool-owned page
+/// that goes back to the pool's free list.
+const DestroyMode = enum {
+    /// Give the physical memory back to the OS and keep only the
+    /// address range (see `terminal_mem.decommit`). This is right when
+    /// the page list is shrinking and the item may sit unused.
+    reclaim,
+
+    /// Zero the memory and keep it. This is for callers that expect the
+    /// pool to hand the item out again right away. Giving it back to the
+    /// OS only to take it back costs system calls and, on Linux, a page
+    /// fault for every OS page of the item.
+    retain,
+};
 
 fn destroyNodeExt(
     pool: *MemoryPool,
     node: *List.Node,
     total_size: ?*usize,
+    mode: DestroyMode,
 ) void {
     const page = node.restore(.discard);
 
@@ -5299,7 +5320,10 @@ fn destroyNodeExt(
             // supported) so it can be reused.
             const item: *align(std.heap.page_size_min) [std_size]u8 =
                 @ptrCast(@alignCast(page.memory.ptr));
-            _ = terminal_mem.decommit(.zero, item, page.memory.len);
+            switch (mode) {
+                .reclaim => _ = terminal_mem.decommit(.zero, item, page.memory.len),
+                .retain => @memset(page.memory, 0),
+            }
             pool.pages.destroy(item);
         },
 
@@ -5766,7 +5790,7 @@ fn eraseRows(
             if (discard) for (self.tracked_pins.keys()) |p| {
                 if (p.node == chunk.node) p.garbage = true;
             };
-            self.erasePage(chunk.node);
+            self.erasePage(chunk.node, .reclaim);
             continue;
         }
 
@@ -5849,7 +5873,7 @@ fn eraseRows(
 /// IMPORTANT: This function does NOT update `total_rows`. The caller is
 /// responsible for accounting for the removed rows before or after calling
 /// this function.
-fn erasePage(self: *PageList, node: *List.Node) void {
+fn erasePage(self: *PageList, node: *List.Node, mode: DestroyMode) void {
     // Must not be the final page.
     assert(node.next != null or node.prev != null);
 
@@ -5871,7 +5895,7 @@ fn erasePage(self: *PageList, node: *List.Node) void {
 
     // Remove the page from the linked list
     self.pages.remove(node);
-    self.destroyNode(node);
+    destroyNodeExt(&self.pool, node, &self.page_size, mode);
 }
 
 /// Returns the pin for the given point. The pin is NOT tracked so it
@@ -7267,6 +7291,7 @@ const Limits = struct {
         self: *const Limits,
         pagelist: *PageList,
         key: Key,
+        mode: DestroyMode,
     ) void {
         if (!self.exceeded(pagelist, key)) return;
 
@@ -7299,7 +7324,7 @@ const Limits = struct {
             // erasePage updates the list, pin targets, and byte accounting.
             // Row accounting belongs to the caller because erasePage is also used
             // by paths that already adjusted total_rows.
-            pagelist.erasePage(first);
+            pagelist.erasePage(first, mode);
             pagelist.total_rows -= first_rows;
             removed += first_rows;
         }
@@ -7827,6 +7852,7 @@ pub const Builder = struct {
             &self.pool,
             node,
             &self.page_size,
+            .reclaim,
         );
         // Free memory pool
         self.pool.deinit();
