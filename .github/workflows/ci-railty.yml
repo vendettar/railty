@@ -97,6 +97,12 @@ jobs:
           ruby -c "$TMP_RB"
           echo "Homebrew script & Ruby Cask check OK"
 
+      - name: Run upstream sync Python tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest tools/upstream/test_defer_queue.py
+
       - name: Detect Zig source changes
         id: changes
         shell: bash

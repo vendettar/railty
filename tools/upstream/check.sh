@@ -3,6 +3,8 @@
 # Safely fetches ghostty & sidegeist (with --no-tags), reports HEAD/merge-base
 # relationships, validates docs/upstream/state.json and ledger.jsonl, lists
 # unreviewed commits, and detects potential patch-id duplicates.
+# It also cross-checks state.json against the real Git HEAD, the newest release
+# tag, and the ledger's railtiy_commit ancestry, warning when they drift.
 # Never modifies main, never merges, and never cherry-picks.
 
 set -euo pipefail
@@ -61,16 +63,22 @@ if [[ "$DO_FETCH" == "true" ]]; then
 fi
 
 export RAILTY_CHECK_PATCH_ID="$CHECK_PATCH_ID"
+export RAILTY_CHECK_FETCH="$DO_FETCH"
 
 python3 - <<'PY'
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import Counter
 
+sys.path.insert(0, "tools/upstream")
+import defer_queue
+
 STATE_PATH = "docs/upstream/state.json"
 LEDGER_PATH = "docs/upstream/ledger.jsonl"
+DEFER_PATH = "docs/upstream/defer-queue.json"
 
 VALID_DECISIONS = {"INCLUDE", "DEFER", "SKIP", "ALREADY_INCLUDED", "NEEDS_REVIEW"}
 VALID_CATEGORIES = {
@@ -139,6 +147,9 @@ if not os.path.exists(STATE_PATH):
 if not os.path.exists(LEDGER_PATH):
     print(f"ERROR: missing {LEDGER_PATH}", file=sys.stderr)
     sys.exit(1)
+if not os.path.exists(DEFER_PATH):
+    print(f"ERROR: missing {DEFER_PATH}", file=sys.stderr)
+    sys.exit(1)
 
 with open(STATE_PATH, encoding="utf-8") as f:
     state = json.load(f)
@@ -188,6 +199,153 @@ by_integration = Counter(r["integration"] for r in rows)
 print(f"By source:      {dict(by_source)}")
 print(f"By decision:    {dict(by_decision)}")
 print(f"By integration: {dict(by_integration)}")
+print()
+
+# --- DEFER review queue -------------------------------------------------------
+with open(DEFER_PATH, encoding="utf-8") as f:
+    defer_doc = json.load(f)
+
+defer_errors, defer_warnings = defer_queue.validate_queue(defer_doc, rows)
+summary = defer_queue.queue_summary(defer_doc)
+
+print("== DEFER Review Queue ==")
+print(f"Entries: {summary['total']} | Schema errors: {len(defer_errors)}")
+print(f"By priority: {dict(sorted(summary['by_priority'].items()))}")
+print("By group:")
+for group, count in sorted(summary["by_group"].items(), key=lambda kv: (-kv[1], kv[0])):
+    print(f"  {count:3d}  {group}")
+if defer_errors:
+    for err in defer_errors[:20]:
+        print("ERROR:", err, file=sys.stderr)
+    sys.exit(1)
+print()
+
+# --- State consistency checks -------------------------------------------------
+# state.json is only useful if it matches reality. These checks are warnings,
+# not hard failures: the tool stays read-only and never edits the files.
+
+warnings = list(defer_warnings)
+state_railty = state.get("railty", {})
+state_head = state_railty.get("head_sha")
+state_tag = state_railty.get("latest_release_tag")
+
+print("== State Consistency ==")
+ancestor = bool(state_head) and is_ancestor(state_head, "HEAD")
+changed_files = []
+if state_head and state_head != head_sha and ancestor:
+    out, _ = git("diff", "--name-only", f"{state_head}..HEAD")
+    changed_files = out.splitlines()
+level, message = defer_queue.state_head_status(
+    state_head,
+    head_sha,
+    ancestor,
+    changed_files,
+)
+if level == "warn":
+    warnings.append(message)
+else:
+    print(message)
+
+# Newest Railty release tag. Upstream Ghostty/Sidegeist tags (v1.4.0, tip, ...)
+# are shared into this repository, so local tags are not reliable here: only
+# origin's own tags identify Railty releases.
+release_tags = None
+out, rc = git("ls-remote", "--tags", "origin", check=False)
+if rc == 0:
+    release_tags = []
+    for line in out.splitlines():
+        ref = line.split("\t")[-1]
+        if not ref.startswith("refs/tags/") or ref.endswith("^{}"):
+            continue
+        name = ref[len("refs/tags/"):]
+        if defer_queue.semver(name):
+            release_tags.append(name)
+
+level, message = defer_queue.release_tag_status(state_tag, release_tags)
+if level == "warn":
+    warnings.append(message)
+else:
+    print(message)
+
+if release_tags:
+    newest_tag = max(
+        (tag for tag in release_tags if defer_queue.semver(tag)),
+        key=defer_queue.semver,
+        default=None,
+    )
+    if newest_tag:
+        tag_commit, rc = git("rev-parse", f"{newest_tag}^{{commit}}", check=False)
+        if rc != 0:
+            warnings.append(f"release tag {newest_tag} cannot be resolved to a commit")
+        elif not is_ancestor(tag_commit, "HEAD"):
+            warnings.append(f"release tag {newest_tag} ({tag_commit[:10]}) is not an ancestor of HEAD")
+
+# Every integrated/adapted INCLUDE entry must point at a commit in HEAD history.
+integrated_rows = [
+    r for r in rows
+    if r["decision"] == "INCLUDE" and r["integration"] in ("integrated", "adapted")
+]
+missing_refs = [r["sha"][:10] for r in integrated_rows if not r.get("railty_commit")]
+dangling_refs = []
+for r in integrated_rows:
+    commit = r.get("railty_commit")
+    if not commit:
+        continue
+    _, rc = git("cat-file", "-e", f"{commit}^{{commit}}", check=False)
+    if rc != 0:
+        dangling_refs.append((r["sha"][:10], commit[:10], "missing"))
+    elif not is_ancestor(commit, "HEAD"):
+        dangling_refs.append((r["sha"][:10], commit[:10], "not-an-ancestor"))
+if missing_refs:
+    warnings.append(f"{len(missing_refs)} integrated INCLUDE entr(ies) lack railty_commit: {missing_refs[:5]}")
+if dangling_refs:
+    warnings.append(f"{len(dangling_refs)} integrated INCLUDE railty_commit(s) are not in HEAD history: {dangling_refs[:5]}")
+if not missing_refs and not dangling_refs:
+    print(f"ledger railty_commit ancestry OK ({len(integrated_rows)} integrated/adapted entries)")
+
+if warnings:
+    print(f"WARNINGS: {len(warnings)}")
+    for w in warnings:
+        print(f"  WARN: {w}")
+else:
+    print("All state consistency checks passed.")
+print()
+
+# --- DEFER re-assessment gates ------------------------------------------------
+ctx = {
+    "zig_version": state_railty.get("pinned_zig_version", ""),
+    "sidegeist_ahead": int(git("rev-list", "--count",
+        f"{state['upstreams']['sidegeist']['last_integrated_sha']}..sidegeist/main")[0] or 0),
+    "ghostty_ahead": int(git("rev-list", "--count",
+        f"{state['upstreams']['ghostty']['last_reviewed_sha']}..ghostty/main")[0] or 0),
+    "macos_uses_snapshot": git(
+        "grep", "-q", "ghostty_snapshot", "--", "macos", "src/apprt", check=False
+    )[1] == 0,
+}
+
+satisfied = defer_queue.satisfied_entries(defer_doc, ctx)
+print("== DEFER Re-assessment Gates ==")
+print(
+    "Context: "
+    f"zig={ctx['zig_version']} sidegeist_ahead={ctx['sidegeist_ahead']} "
+    f"ghostty_ahead={ctx['ghostty_ahead']} macos_uses_snapshot={ctx['macos_uses_snapshot']}"
+)
+print(f"Triggers satisfied: {len(satisfied)}")
+for entry in satisfied[:15]:
+    print(f"  [{entry['priority']}] {entry['sha'][:10]} {entry['group']} ({entry['revisit_trigger']})")
+if len(satisfied) > 15:
+    print(f"  ... ({len(satisfied) - 15} more)")
+
+contained = [
+    entry for entry in defer_doc.get("entries", [])
+    if is_ancestor(entry["sha"], "sidegeist/main")
+]
+if contained:
+    print(f"WARNING: {len(contained)} DEFER commit(s) are already in sidegeist/main and may be integrated:")
+    for entry in contained[:10]:
+        print(f"  {entry['sha'][:10]} {entry['group']}")
+else:
+    print("No DEFER commit is already contained in sidegeist/main.")
 print()
 
 def check_upstream(name, remote_ref, remote_head, mb_sha):
