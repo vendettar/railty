@@ -41,6 +41,11 @@ pub const Options = struct {
     /// its default byte-based scrollback limit.
     @"max-lines": ?usize = null,
 
+    /// Maximum scrollback bytes retained. The terminal default is 10,000
+    /// bytes, which hides line-limit behavior; raise this when measuring
+    /// `--max-lines`.
+    @"max-bytes": usize = 10_000,
+
     /// Enable opt-in continuation tracking on the stream.
     @"continuation-enabled": bool = false,
 
@@ -76,6 +81,7 @@ pub fn create(
             .rows = opts.@"terminal-rows",
             .cols = opts.@"terminal-cols",
             .max_scrollback_lines = opts.@"max-lines",
+            .max_scrollback_bytes = opts.@"max-bytes",
         }),
         .stream = undefined,
     };
