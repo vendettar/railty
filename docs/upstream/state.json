@@ -97,18 +97,18 @@
       "commit": "04c6deea1",
       "ci_run": 44075475339,
       "ci_result": "success",
-      "validation": "PageList tests passed, macOS arm64 build passed, performance NOT_TESTED",
-      "merged": false
+      "validation": "PageList tests passed, macOS arm64 build passed, measured 1.65x (1,000 lines) / 1.71x (10,000 lines) on M4 Pro; RSS 11.06 -> 10.90 MB",
+      "merged": false,
+      "benchmark_report": "docs/upstream/benchmarks/2026-11-17-baseline.md"
     }
   },
   "active_task": {
     "status": "completed",
     "branch": "main",
-    "description": "Upstream Sync v1.2 Lite: CI now runs the upstream sync Python tests; PageList prune-memory fix confirmed applicable and adapted on an unmerged branch with Zig tests + macOS build; maintenance scope unchanged.",
-    "next_recommended_branch": null,
+    "description": "Upstream Sync v1.2 Lite + local Xcode validation: CI runs the sync Python tests; prune-memory fix measured at 1.65-1.71x for line-limited scrollback with no RSS increase. Merge decision pending.",
+    "next_recommended_branch": "sync/ghostty-pagelist-prune-memory",
     "remaining_priority_groups": [
-      "merge decision: sync/ghostty-pagelist-prune-memory",
-      "terminal-refcounted-set (only on demand)"
+      "merge sync/ghostty-pagelist-prune-memory"
     ]
   },
   "pending_review_ranges": [],

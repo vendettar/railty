@@ -47,12 +47,26 @@ Diff: only `src/terminal/PageList.zig`, 43 insertions / 17 deletions.
 | `zig build test-lib-vt -Dtest-filter=PageList` | passed |
 | Full `zig build test-lib-vt` | not completed in this session (debug suite ran >25 min; stopped). Targeted PageList tests used instead |
 | `xcode-27` macOS arm64 build, run `44075475339` | success (workflow_dispatch, no Release/Cask changes) |
-| Runtime / performance | `NOT_TESTED` (no Xcode/GUI; `ghostty-bench` blocked by missing Metal) |
+| Runtime / GUI | `NOT_TESTED` (no GUI interaction in this session) |
+| Throughput / memory | measured on M4 Pro with `ghostty-bench +terminal-stream` (see below) |
+
+### Local benchmark
+
+Environment: Xcode 27.2 + Metal Toolchain 27B47, Zig 0.17.1, `ReleaseFast`, 1 GiB newline-terminated 199-column ASCII, 50×200 terminal, byte limit raised to 10 GB so the line limit is the active constraint.
+
+| Scenario | Baseline | Prune (`04c6deea1`) | Speedup |
+|---|---:|---:|---:|
+| max-lines 1,000 | 674 MB/s | 1,115 MB/s | **1.65x** |
+| max-lines 10,000 | 729 MB/s | 1,244 MB/s | **1.71x** |
+| no line limit | 422 MB/s | 438 MB/s | 1.04x (noise) |
+
+Peak RSS at max-lines 1,000: 11.06 MB (baseline) vs 10.90 MB (prune); user CPU identical (0.70 s), system CPU 0.65 s → 0.08 s. This matches the upstream root cause (decommit/fault churn), not a parsing change.
 
 Regression coverage reuses existing tests: `PageList set max lines prunes immediately and can be raised`, `PageList max lines uses one-page minimum`, `PageList max lines does not round larger limits`, `PageList grow prune required with a single page`, plus the full PageList suite. Upstream added no new test because the decommit behavior is not observable through the public API.
 
 ## 5. Recommendation
 
-- The fix is small, self-contained, and addresses a real 2x throughput cliff for line-limited scrollback users.
-- Recommend merging `04c6deea1` into `main` after review; it does not touch Sidegeist, branding, CI/CD, or the build system.
-- Performance remains `NOT_TESTED` on Railty hardware; do not claim the upstream numbers as measured here.
+- **Recommend merging** `04c6deea1` into `main`. It is a 43/17-line change in one file, has targeted tests plus a successful macOS arm64 build, and now has a measured 1.65–1.71x throughput win for line-limited scrollback with no RSS increase.
+- The gain is limited to users who set a line-based scrollback limit; default byte-limited users see no regression (1.04x within noise).
+- The branch also carries two benchmark-only commits (`93397f909`, `97444fd04`) needed to reproduce the numbers; they can be merged with it or skipped, but without them `+terminal-stream` cannot configure line/byte limits.
+- No Sidegeist, branding, CI/CD, or build-system changes are involved.
