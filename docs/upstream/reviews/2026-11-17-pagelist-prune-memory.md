@@ -45,6 +45,7 @@ Diff: only `src/terminal/PageList.zig`, 43 insertions / 17 deletions.
 |---|---|
 | `zig fmt --check src/terminal/PageList.zig` | passed |
 | `zig build test-lib-vt -Dtest-filter=PageList` | passed |
+| `zig build test -Demit-macos-app=false -Dtest-filter=PageList` (Xcode 27.2) | passed |
 | Full `zig build test-lib-vt` | not completed in this session (debug suite ran >25 min; stopped). Targeted PageList tests used instead |
 | `xcode-27` macOS arm64 build, run `44075475339` | success (workflow_dispatch, no Release/Cask changes) |
 | Runtime / GUI | `NOT_TESTED` (no GUI interaction in this session) |
