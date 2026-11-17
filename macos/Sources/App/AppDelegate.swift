@@ -535,7 +535,7 @@ class AppDelegate: NSObject,
                 Self.logger.warning("refusing to execute file with control characters path=\(filename.debugDescription, privacy: .public)")
                 let alert = NSAlert()
                 alert.messageText = "Cannot Execute File"
-                alert.informativeText = "This file's path contains hidden control characters, which could make Ghostty run a different command than the one shown."
+                alert.informativeText = "This file's path contains hidden control characters, which could make Railty run a different command than the one shown."
                 alert.addButton(withTitle: "OK")
                 alert.alertStyle = .warning
                 alert.runModal()
@@ -564,7 +564,7 @@ class AppDelegate: NSObject,
             // may want to show this as a sheet on the focused window (especially if we're
             // opening a tab). I'm not sure.
             let alert = NSAlert()
-            alert.messageText = "Allow Ghostty to execute \"\(filename)\"?"
+            alert.messageText = "Allow Railty to execute \"\(filename)\"?"
             alert.addButton(withTitle: "Allow")
             alert.addButton(withTitle: "Cancel")
             alert.alertStyle = .warning
@@ -1368,7 +1368,7 @@ extension AppDelegate {
                 let alert = NSAlert()
                 alert.messageText = "Failed to Set Default Terminal"
                 alert.informativeText = """
-                Ghostty could not be set as the default terminal application.
+                Railty could not be set as the default terminal application.
 
                 Error: \(error.localizedDescription)
                 """

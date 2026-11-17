@@ -320,7 +320,7 @@ final class GhosttyIPCServer {
     }
 
     private func handleTabNotify(params: [String: Any], client: ClientConnection) {
-        let title = params["title"] as? String ?? "Ghostty"
+        let title = params["title"] as? String ?? "Railty"
         let body = params["body"] as? String ?? ""
 
         // macOS notification (shows as banner when app is not focused)
