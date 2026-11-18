@@ -601,6 +601,12 @@ fn actionCommands(action: Action.Key) []const Command {
             .description = i18n.N_("Reload the config file."),
         }},
 
+        .toggle_theme => comptime &.{.{
+            .action = .toggle_theme,
+            .title = i18n.N_("Toggle Theme"),
+            .description = i18n.N_("Switch to the next theme in the theme-cycle configuration."),
+        }},
+
         .close_surface => comptime &.{.{
             .action = .close_surface,
             .title = i18n.N_("Close Terminal"),

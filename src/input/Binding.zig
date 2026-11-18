@@ -719,6 +719,16 @@ pub const Action = union(enum) {
     /// Note that not all changes can be applied at runtime.
     reload_config,
 
+    /// Switch to the next theme in the `theme-cycle` configuration list.
+    ///
+    /// The list of themes is configured with the `theme-cycle` configuration
+    /// option. If `theme-cycle` is not set or is empty, this action does
+    /// nothing.
+    ///
+    /// This only changes the theme for the current session; the `theme`
+    /// configuration value is not modified.
+    toggle_theme,
+
     /// Close the current "surface", whether that is a window, tab, split, etc.
     ///
     /// This might trigger a close confirmation popup, depending on the value
@@ -1363,6 +1373,7 @@ pub const Action = union(enum) {
             // Obviously app actions.
             .open_config,
             .reload_config,
+            .toggle_theme,
             .close_all_windows,
             .quit,
             .toggle_quick_terminal,

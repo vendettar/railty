@@ -600,6 +600,20 @@ language: ?[:0]const u8 = null,
 ///   - macOS: titlebar tabs style is not updated when switching themes.
 theme: ?Theme = null,
 
+/// A comma-separated list of themes to cycle through using the
+/// `toggle_theme` keybinding action. For example:
+///
+///     theme-cycle = Catppuccin Mocha, TokyoNight Storm, Dracula
+///
+/// Each entry must be the name of a theme available to Railty, either
+/// bundled with Railty or placed in your themes configuration directory.
+/// Pressing the `toggle_theme` action switches to the next theme in the
+/// list, wrapping around at the end.
+///
+/// Switching themes this way only affects the current session. Your
+/// configuration file is never modified.
+@"theme-cycle": ?[:0]const u8 = null,
+
 /// Background color for the window.
 /// Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color.
 background: Color = .{ .r = 0x28, .g = 0x2C, .b = 0x34 },
@@ -7163,6 +7177,13 @@ pub const Keybinds = struct {
                 .{ .key = .{ .unicode = 'z' }, .mods = .{ .super = true, .shift = true } },
                 .{ .redo = {} },
                 .{ .performable = true },
+            );
+
+            // Toggle theme
+            try self.set.put(
+                alloc,
+                .{ .key = .{ .unicode = 'y' }, .mods = .{ .super = true, .shift = true } },
+                .{ .toggle_theme = {} },
             );
 
             // Viewport scrolling
