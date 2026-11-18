@@ -16,7 +16,7 @@ if ghostty_init(UInt(CommandLine.argc), CommandLine.unsafeArgv) != GHOSTTY_SUCCE
             "Railty failed to initialize! If you're executing Railty from the command line\n" +
             "then this is usually because an invalid action or multiple actions were specified.\n" +
             "Actions start with the `+` character.\n\n" +
-            "View all available actions by running `ghostty +help`.\n")
+            "Run the Railty executable with `+help` to view all available actions.\n")
         exit(1)
 
     case .app:

@@ -13,7 +13,7 @@ const adw_version = @import("../apprt/gtk/adw_version.zig");
 
 pub const Options = struct {};
 
-/// The `version` command is used to display information about Ghostty. Recognized as
+/// The `version` command is used to display information about Railty. Recognized as
 /// either `+version` or `--version`.
 pub fn run(alloc: Allocator) !u8 {
     var buffer: [1024]u8 = undefined;
@@ -28,11 +28,11 @@ pub fn run(alloc: Allocator) !u8 {
 
     if (tty) if (build_config.version.build) |commit_hash| {
         try stdout.print(
-            "\x1b]8;;https://github.com/ghostty-org/ghostty/commit/{s}\x1b\\",
+            "\x1b]8;;https://github.com/vendettar/railty/commit/{s}\x1b\\",
             .{commit_hash},
         );
     };
-    try stdout.print("Ghostty {s}\n\n", .{build_config.version_string});
+    try stdout.print("Railty {s}\n\n", .{build_config.version_string});
     if (tty) try stdout.print("\x1b]8;;\x1b\\", .{});
 
     try stdout.print("Version\n", .{});
@@ -65,7 +65,7 @@ pub fn run(alloc: Allocator) !u8 {
             try stdout.print("  - libX11        : disabled\n", .{});
         }
 
-        // We say `libwayland` since it is possible to build Ghostty without
+        // We say `libwayland` since it is possible to build Railty without
         // Wayland integration but with Wayland-enabled GTK
         if (comptime build_options.wayland) {
             try stdout.print("  - libwayland    : enabled\n", .{});

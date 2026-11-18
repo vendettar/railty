@@ -340,7 +340,7 @@ struct GitPanelView: View {
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let process = Process()
         process.executableURL = URL(fileURLWithPath: shell)
-        process.arguments = ["-ilc", #"exec "$@""#, "ghostty"] + words + [path]
+        process.arguments = ["-ilc", #"exec "$@""#, "railty"] + words + [path]
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice

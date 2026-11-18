@@ -21,19 +21,19 @@ pub const Options = struct {
     }
 };
 
-/// The `edit-config` command opens the Ghostty configuration file in the
+/// The `edit-config` command opens the Railty configuration file in the
 /// editor specified by the `$VISUAL` or `$EDITOR` environment variables.
 ///
 /// IMPORTANT: This command will not reload the configuration after
 /// editing. You will need to manually reload the configuration using the
-/// application menu, configured keybind, or by restarting Ghostty. We
-/// plan to auto-reload in the future, but Ghostty isn't capable of
+/// application menu, configured keybind, or by restarting Railty. We
+/// plan to auto-reload in the future, but Railty isn't capable of
 /// this yet.
 ///
 /// The filepath opened is the default user-specific configuration
 /// file, which is typically located at `$XDG_CONFIG_HOME/ghostty/config.ghostty`.
 /// On macOS, this may also be located at
-/// `~/Library/Application Support/com.mitchellh.ghostty/config.ghostty`.
+/// `~/Library/Application Support/com.vendettar.railty/config.ghostty`.
 /// On macOS, whichever path exists and is non-empty will be prioritized,
 /// prioritizing the Application Support directory if neither are
 /// non-empty.
@@ -70,7 +70,7 @@ pub fn run(alloc: Allocator) !u8 {
 fn runInner(alloc: Allocator, stderr: *std.Io.Writer) !u8 {
     // We require libc because we want to use std.c.environ for envp
     // and not have to build that ourselves. We can remove this
-    // limitation later but Ghostty already heavily requires libc
+    // limitation later but Railty already heavily requires libc
     // so this is not a big deal.
     comptime assert(builtin.link_libc);
 
@@ -101,7 +101,7 @@ fn runInner(alloc: Allocator, stderr: *std.Io.Writer) !u8 {
             error.NoEditorConfigured => {
                 try stderr.print(
                     \\The $EDITOR or $VISUAL environment variable is not set or is empty.
-                    \\This environment variable is required to edit the Ghostty configuration
+                    \\This environment variable is required to edit the Railty configuration
                     \\via this CLI command.
                     \\
                     \\Please set the environment variable to your preferred terminal

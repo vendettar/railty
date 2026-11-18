@@ -16,7 +16,7 @@ pub const Options = struct {
     /// This is set by the CLI parser for deinit.
     _arena: ?ArenaAllocator = null,
 
-    /// If set, open up a new tab in a custom instance of Ghostty.
+    /// If set, open up a new tab in a custom instance of Railty.
     class: ?[:0]const u8 = null,
 
     /// The surface to target.
@@ -108,16 +108,16 @@ pub const Options = struct {
 };
 
 /// The `new-tab` will use native platform IPC to open up a new tab in a running
-/// instance of Ghostty.
+/// instance of Railty.
 ///
 /// If the `--class` flag is not set, the `new-tab` command will try and connect
-/// to a running instance of Ghostty based on what optimizations the Ghostty
+/// to a running instance of Railty based on what optimizations the Railty
 /// CLI was compiled with. Otherwise the `new-tab` command will try and contact
-/// a running Ghostty instance that was configured with the same `class` as was
+/// a running Railty instance that was configured with the same `class` as was
 /// given on the command line.
 ///
 /// All of the arguments after the `+new-tab` argument (except for the `--class`
-/// and `--surface-id` flag) will be sent to the remote Ghostty instance and
+/// and `--surface-id` flag) will be sent to the remote Railty instance and
 /// will be parsed as command line flags. These flags will override certain
 /// settings when creating the first surface in the new tab. Currently, only
 /// `--working-directory`, `--command`, `--shell-integration=<mode>`, and
@@ -133,32 +133,32 @@ pub const Options = struct {
 /// directory.
 ///
 /// If `--working-directory` is _not_ found on the command line, the working
-/// directory that `ghostty +new-tab` is run from will be passed to Ghostty.
+/// directory that `ghostty +new-tab` is run from will be passed to Railty.
 ///
-/// GTK uses an application ID to identify instances of applications. If Ghostty
+/// GTK uses an application ID to identify instances of applications. If Railty
 /// is compiled with release optimizations, the default application ID will be
-/// `com.mitchellh.ghostty`. If Ghostty is compiled with debug optimizations,
+/// `com.mitchellh.ghostty`. If Railty is compiled with debug optimizations,
 /// the default application ID will be `com.mitchellh.ghostty-debug`.  The
 /// `class` configuration entry can be used to set up a custom application
 /// ID. The class name must follow the requirements defined [in the GTK
 /// documentation](https://docs.gtk.org/gio/type_func.Application.id_is_valid.html)
-/// or it will be ignored and Ghostty will use the default as defined above.
+/// or it will be ignored and Railty will use the default as defined above.
 ///
-/// On GTK, D-Bus activation must be properly configured. Ghostty does not need
+/// On GTK, D-Bus activation must be properly configured. Railty does not need
 /// to be running for this to open a new tab, making it suitable for binding
 /// to keys in your window manager (if other methods for configuring global
 /// shortcuts are unavailable). D-Bus will handle launching a new instance
-/// of Ghostty if it is not already running. See the Ghostty website for
-/// information on properly configuring D-Bus activation.
+/// of Railty if it is not already running. See the upstream Ghostty
+/// documentation for information on properly configuring D-Bus activation.
 ///
 /// Only supported on GTK.
 ///
 /// Flags:
 ///
 ///   * `--class=<class>`: If set, open up a new window in a custom instance of
-///     Ghostty. The class must be a valid GTK application ID.
+///     Railty. The class must be a valid GTK application ID.
 ///
-///   * `--surface-id=<surface id>`: If set, specifies a Ghostty surface ID.
+///   * `--surface-id=<surface id>`: If set, specifies a Railty surface ID.
 ///     This is used to identify the window that the new tab will be added to.
 ///     If the surface ID is not specified or is `0` the currently focused
 ///     surface will be used.
@@ -169,7 +169,7 @@ pub const Options = struct {
 ///     which shell to use. See the main configuration documentation for
 ///     supported values.
 ///
-///   * `--working-directory=<directory>`: The working directory to pass to Ghostty.
+///   * `--working-directory=<directory>`: The working directory to pass to Railty.
 ///
 ///   * `--title`: A title that will override the title of the first surface in
 ///     the new tab. The title override may be edited or removed later.

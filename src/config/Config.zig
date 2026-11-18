@@ -106,21 +106,21 @@ pub const compatibility = std.StaticStringMap(
     .{ "copy-on-select", compatCopyOnSelect },
 });
 
-/// Set Ghostty's graphical user interface language to a language other than the
+/// Set Railty's graphical user interface language to a language other than the
 /// system default language. For example:
 ///
 ///     language = de
 ///
-/// will force the strings in Ghostty's graphical user interface to be in German
+/// will force the strings in Railty's graphical user interface to be in German
 /// rather than the system default.
 ///
-/// This will not affect the language used by programs run _within_ Ghostty.
+/// This will not affect the language used by programs run _within_ Railty.
 /// Those will continue to use the default system language. There are also many
-/// non-GUI elements in Ghostty that are not translated - this setting will have
+/// non-GUI elements in Railty that are not translated - this setting will have
 /// no effect on those.
 ///
 /// Warning: This setting cannot be reloaded at runtime. To change the language
-/// you must fully restart Ghostty.
+/// you must fully restart Railty.
 ///
 /// GTK only.
 /// Available since 1.3.0.
@@ -137,7 +137,7 @@ language: ?[:0]const u8 = null,
 /// font. This is particularly useful for multiple languages, symbolic fonts,
 /// etc.
 ///
-/// Notes on emoji specifically: On macOS, Ghostty by default will always use
+/// Notes on emoji specifically: On macOS, Railty by default will always use
 /// Apple Color Emoji and on Linux will always use Noto Emoji. You can
 /// override this behavior by specifying a font family here that contains
 /// emoji glyphs.
@@ -145,15 +145,15 @@ language: ?[:0]const u8 = null,
 /// The specific styles (bold, italic, bold italic) do not need to be
 /// explicitly set. If a style is not set, then the regular style (font-family)
 /// will be searched for stylistic variants. If a stylistic variant is not
-/// found, Ghostty will use the regular style. This prevents falling back to a
+/// found, Railty will use the regular style. This prevents falling back to a
 /// different font family just to get a style such as bold. This also applies
 /// if you explicitly specify a font family for a style. For example, if you
-/// set `font-family-bold = FooBar` and "FooBar" cannot be found, Ghostty will
+/// set `font-family-bold = FooBar` and "FooBar" cannot be found, Railty will
 /// use whatever font is set for `font-family` for the bold style.
 ///
 /// Finally, some styles may be synthesized if they are not supported.
 /// For example, if a font does not have an italic style and no alternative
-/// italic font is specified, Ghostty will synthesize an italic style by
+/// italic font is specified, Railty will synthesize an italic style by
 /// applying a slant to the regular style. If you want to disable these
 /// synthesized styles then you can use the `font-style` configurations
 /// as documented below.
@@ -196,10 +196,10 @@ language: ?[:0]const u8 = null,
 @"font-style-italic": FontStyle = .{ .default = {} },
 @"font-style-bold-italic": FontStyle = .{ .default = {} },
 
-/// Control whether Ghostty should synthesize a style if the requested style is
+/// Control whether Railty should synthesize a style if the requested style is
 /// not available in the specified font-family.
 ///
-/// Ghostty can synthesize bold, italic, and bold italic styles if the font
+/// Railty can synthesize bold, italic, and bold italic styles if the font
 /// does not have a specific style. For bold, this is done by drawing an
 /// outline around the glyph of varying thickness. For italic, this is done by
 /// applying a slant to the glyph. For bold italic, both of these are applied.
@@ -241,7 +241,7 @@ language: ?[:0]const u8 = null,
 ///
 /// The syntax is fairly loose, but invalid settings will be silently ignored.
 ///
-/// The font feature will apply to all fonts rendered by Ghostty. A future
+/// The font feature will apply to all fonts rendered by Railty. A future
 /// enhancement will allow targeting specific faces.
 ///
 /// To disable programming ligatures, use `-calt` since this is the typical
@@ -365,8 +365,8 @@ language: ?[:0]const u8 = null,
 /// "!" is at the end of one run and "=" is at the start of the next run,
 /// then the ligature will not be formed.
 ///
-/// Ghostty breaks runs at certain points to improve readability or usability.
-/// For example, Ghostty by default will break runs under the cursor so that
+/// Railty breaks runs at certain points to improve readability or usability.
+/// For example, Railty by default will break runs under the cursor so that
 /// text editing can see the individual characters rather than a ligature.
 /// This configuration lets you configure this behavior.
 ///
@@ -546,11 +546,11 @@ language: ?[:0]const u8 = null,
 @"freetype-load-flags": FreetypeLoadFlags = .{},
 
 /// A theme to use. This can be a built-in theme name, a custom theme
-/// name, or an absolute path to a custom theme file. Ghostty also supports
+/// name, or an absolute path to a custom theme file. Railty also supports
 /// specifying a different theme to use for light and dark mode. Each
 /// option is documented below.
 ///
-/// If the theme is an absolute pathname, Ghostty will attempt to load that
+/// If the theme is an absolute pathname, Railty will attempt to load that
 /// file as a theme. If that file does not exist or is inaccessible, an error
 /// will be logged and no other directories will be searched.
 ///
@@ -559,20 +559,20 @@ language: ?[:0]const u8 = null,
 /// systems with case-sensitive filesystems. It is an error for a theme name to
 /// include path separators unless it is an absolute pathname.
 ///
-/// The first directory is the `themes` subdirectory of your Ghostty
+/// The first directory is the `themes` subdirectory of your Railty
 /// configuration directory. This is `$XDG_CONFIG_HOME/ghostty/themes` or
 /// `~/.config/ghostty/themes`.
 ///
-/// The second directory is the `themes` subdirectory of the Ghostty resources
-/// directory. Ghostty ships with a multitude of themes that will be installed
+/// The second directory is the `themes` subdirectory of the Railty resources
+/// directory. Railty ships with a multitude of themes that will be installed
 /// into this directory. On macOS, this list is in the
-/// `Ghostty.app/Contents/Resources/ghostty/themes` directory. On Linux, this
+/// `Railty.app/Contents/Resources/ghostty/themes` directory. On Linux, this
 /// list is in the `share/ghostty/themes` directory (wherever you installed the
-/// Ghostty "share" directory.
+/// Railty "share" directory.
 ///
 /// To see a list of available themes, run `ghostty +list-themes`.
 ///
-/// A theme file is simply another Ghostty configuration file. They share
+/// A theme file is simply another Railty configuration file. They share
 /// the same syntax and same configuration options. A theme can set any valid
 /// configuration option so please do not use a theme file from an untrusted
 /// source. The built-in themes are audited to only set safe configuration
@@ -580,7 +580,7 @@ language: ?[:0]const u8 = null,
 ///
 /// Some options cannot be set within theme files. The reason these are not
 /// supported should be self-evident. A theme file cannot set `theme` or
-/// `config-file`. At the time of writing this, Ghostty will not show any
+/// `config-file`. At the time of writing this, Railty will not show any
 /// warnings or errors if you set these options in a theme file but they will
 /// be silently ignored.
 ///
@@ -889,7 +889,7 @@ palette: Palette = .{},
 /// If this is not set, the cursor blinks by default. Note that this is not the
 /// same as a "true" value, as noted below.
 ///
-/// If this is not set at all (`null`), then Ghostty will respect DEC Mode 12
+/// If this is not set at all (`null`), then Railty will respect DEC Mode 12
 /// (AT&T cursor blink) as an alternate approach to turning blinking on/off. If
 /// this is set to any value other than null, DEC mode 12 will be ignored but
 /// `DECSCUSR` will still be respected.
@@ -914,7 +914,7 @@ palette: Palette = .{},
 ///
 /// This feature requires prompt marking via `OSC 133`. Some shells like Fish
 /// (v4.1+) and Nu (0.111+) natively support this while others may require
-/// additional configuration or Ghostty's shell integration features to be
+/// additional configuration or Railty's shell integration features to be
 /// enabled.
 ///
 /// Depending on the shell, this works either by translating your click
@@ -937,7 +937,7 @@ palette: Palette = .{},
 ///
 /// - `keystroke` If set, scroll the surface to the bottom when the user
 ///   presses a key that results in data being sent to the PTY (basically
-///   anything but modifiers or keybinds that are processed by Ghostty).
+///   anything but modifiers or keybinds that are processed by Railty).
 ///
 /// - `output` If set, scroll the surface to the bottom if there is new data
 ///   to display (e.g., when new lines are printed to the terminal).
@@ -1007,7 +1007,7 @@ palette: Palette = .{},
 /// fullscreen. This is because the background becomes gray and it can cause
 /// widgets to show through which isn't generally desirable.
 ///
-/// On macOS, changing this configuration requires restarting Ghostty completely.
+/// On macOS, changing this configuration requires restarting Railty completely.
 @"background-opacity": f64 = 1.0,
 
 /// Applies background opacity to cells with an explicit background color
@@ -1099,7 +1099,7 @@ palette: Palette = .{},
 /// Default: `true`
 @"sidebar-git": bool = true,
 
-/// Control when Ghostty preserves a zoomed split. Under normal circumstances,
+/// Control when Railty preserves a zoomed split. Under normal circumstances,
 /// any operation that changes focus or layout of the split tree in a window
 /// will unzoom any zoomed split. This configuration allows you to control
 /// this behavior.
@@ -1167,16 +1167,16 @@ palette: Palette = .{},
 ///
 /// This command will be used for all new terminal surfaces, i.e. new windows,
 /// tabs, etc. If you want to run a command only for the first terminal surface
-/// created when Ghostty starts, use the `initial-command` configuration.
+/// created when Railty starts, use the `initial-command` configuration.
 ///
-/// Ghostty supports the common `-e` flag for executing a command with
+/// Railty supports the common `-e` flag for executing a command with
 /// arguments. For example, `ghostty -e fish --with --custom --args`.
 /// This flag sets the `initial-command` configuration, see that for more
 /// information.
 command: ?Command = null,
 
 /// This is the same as "command", but only applies to the first terminal
-/// surface created when Ghostty starts. Subsequent terminal surfaces will use
+/// surface created when Railty starts. Subsequent terminal surfaces will use
 /// the `command` configuration.
 ///
 /// After the first terminal surface is created (or closed), there is no
@@ -1196,7 +1196,7 @@ command: ?Command = null,
 ///   * `gtk-single-instance=false` - This ensures that a new instance is
 ///     launched and the CLI args are respected.
 ///
-///   * `quit-after-last-window-closed=true` - This ensures that the Ghostty
+///   * `quit-after-last-window-closed=true` - This ensures that the Railty
 ///     process will exit when the command exits. Additionally, the
 ///     `quit-after-last-window-closed-delay` is unset.
 ///
@@ -1308,11 +1308,11 @@ command: ?Command = null,
 /// will result in `foo=baz` being passed to the launched commands.
 ///
 /// These environment variables will override any existing environment
-/// variables set by Ghostty. For example, if you set `GHOSTTY_RESOURCES_DIR`
-/// then the value you set here will override the value Ghostty typically
+/// variables set by Railty. For example, if you set `GHOSTTY_RESOURCES_DIR`
+/// then the value you set here will override the value Railty typically
 /// automatically injects.
 ///
-/// These environment variables _will not_ be passed to commands run by Ghostty
+/// These environment variables _will not_ be passed to commands run by Railty
 /// for other purposes, like `open` or `xdg-open` used to open URLs in your
 /// browser.
 ///
@@ -1389,13 +1389,13 @@ input: RepeatableReadableIO = .{},
 ///
 /// Scrollback is stored in memory and allocated lazily up to this limit, so
 /// setting a very large limit does not immediately consume that amount of
-/// memory. On supported systems with scrollback compression enabled, Ghostty
+/// memory. On supported systems with scrollback compression enabled, Railty
 /// attempts to compress fully historical pages which are not currently visible
 /// while the terminal is idle. This can reduce physical memory usage, depending
 /// on the contents of the scrollback.
 ///
 /// This limit always measures the uncompressed logical size of the terminal
-/// pages. Compression does not allow Ghostty to retain more history than the
+/// pages. Compression does not allow Railty to retain more history than the
 /// configured limit. Accessing compressed history restores it transparently
 /// and may increase the terminal's physical memory usage again.
 ///
@@ -1413,7 +1413,7 @@ input: RepeatableReadableIO = .{},
 /// The maximum number of lines of scrollback to retain. This excludes
 /// the active screen. Soft-wrapped lines count as multiple lines.
 ///
-/// This limit is an estimate. Internally, Ghostty will only trim lines
+/// This limit is an estimate. Internally, Railty will only trim lines
 /// up to the minimum allocation unit that is used internally (called a
 /// "page"). The size of a page depends on how many styles, graphemes, etc.
 /// take up the screen. In practice, this can be anywhere from a handful to
@@ -1430,7 +1430,7 @@ input: RepeatableReadableIO = .{},
 
 /// Whether to compress scrollback pages while the terminal is idle.
 ///
-/// Ghostty does its best to only compress when idle and decompress
+/// Railty does its best to only compress when idle and decompress
 /// as needed. This means that compression doesn't lower IO throughput.
 /// We recommend you keep it on.
 ///
@@ -1443,7 +1443,7 @@ input: RepeatableReadableIO = .{},
 /// in physical memory for pages which are compressed. Compression savings are
 /// content-dependent.
 ///
-/// Note that the way Ghostty works is that we compress and discard the
+/// Note that the way Railty works is that we compress and discard the
 /// physical/resident memory but we retain virtual mappings. You will not
 /// see a decrease in virtual memory usage, but you will see a decrease
 /// in physical/memory usage.
@@ -1541,8 +1541,8 @@ maximize: bool = false,
 /// decorations.
 fullscreen: Fullscreen = .false,
 
-/// The title Ghostty will use for the window. This will force the title of the
-/// window to be this title at all times and Ghostty will ignore any set title
+/// The title Railty will use for the window. This will force the title of the
+/// window to be this title at all times and Railty will ignore any set title
 /// escape sequences programs (such as Neovim) may send.
 ///
 /// If you want a blank title, set this to one or more spaces by quoting
@@ -1590,13 +1590,13 @@ class: ?[:0]const u8 = null,
 /// The directory to change to after starting the command.
 ///
 /// This setting is secondary to the `window-inherit-working-directory`
-/// setting. If a previous Ghostty terminal exists in the same process,
+/// setting. If a previous Railty terminal exists in the same process,
 /// `window-inherit-working-directory` will take precedence. Otherwise, this
 /// setting will be used. Typically, this setting is used only for the first
 /// window.
 ///
 /// The default is `inherit` except in special scenarios listed next. On macOS,
-/// if Ghostty can detect it is launched from launchd (double-clicked) or
+/// if Railty can detect it is launched from launchd (double-clicked) or
 /// `open`, then it defaults to `home`. On Linux with GTK, if Ghostty can detect
 /// it was launched from a desktop launcher, then it defaults to `home`.
 ///
@@ -1660,7 +1660,7 @@ class: ?[:0]const u8 = null,
 /// The special key `catch_all` can be used to match any key that is not
 /// otherwise bound. This can be combined with modifiers, for example
 /// `ctrl+catch_all` will match any key pressed with `ctrl` that is not
-/// otherwise bound. When looking up a binding, Ghostty first tries to match
+/// otherwise bound. When looking up a binding, Railty first tries to match
 /// `catch_all` with modifiers. If no match is found and the event has
 /// modifiers, it falls back to `catch_all` without modifiers.
 ///
@@ -1671,7 +1671,7 @@ class: ?[:0]const u8 = null,
 ///
 /// Note: The fn or "globe" key on keyboards are not supported as a
 /// modifier. This is a limitation of the operating systems and GUI toolkits
-/// that Ghostty uses.
+/// that Railty uses.
 ///
 /// Some additional notes for triggers:
 ///
@@ -1695,7 +1695,7 @@ class: ?[:0]const u8 = null,
 ///
 /// A trigger sequence has some special handling:
 ///
-///   * Ghostty will wait an indefinite amount of time for the next key in
+///   * Railty will wait an indefinite amount of time for the next key in
 ///     the sequence. There is no way to specify a timeout. The only way to
 ///     force the output of a prefix key is to assign another keybind to
 ///     specifically output that key (e.g. `ctrl+a>ctrl+a=text:foo`) or
@@ -1773,10 +1773,10 @@ class: ?[:0]const u8 = null,
 ///
 ///  * `global:`
 ///
-///    Make the keybind global. By default, keybinds only work within Ghostty
+///    Make the keybind global. By default, keybinds only work within Railty
 ///    and under the right conditions (application focused, sometimes terminal
 ///    focused, etc.). If you want a keybind to work globally across your system
-///    (e.g. even when Ghostty is not focused), specify this prefix.
+///    (e.g. even when Railty is not focused), specify this prefix.
 ///    This prefix implies `all:`.
 ///
 ///    Note: this does not work in all environments; see the additional notes
@@ -1801,7 +1801,7 @@ class: ?[:0]const u8 = null,
 ///
 ///    Only consume the input if the action is able to be performed.
 ///    For example, the `copy_to_clipboard` action will only consume the input
-///    if there is a selection to copy. If there is no selection, Ghostty
+///    if there is a selection to copy. If there is no selection, Railty
 ///    behaves as if the keybind was not set. This has no effect with `global:`
 ///    or `all:`-prefixed keybinds. For key sequences, this will reset the
 ///    sequence if the action is not performable (acting identically to not
@@ -1825,8 +1825,8 @@ class: ?[:0]const u8 = null,
 /// and not consume the input to reload the config.
 ///
 /// On macOS, this feature requires accessibility permissions to be granted
-/// to Ghostty. When a `global:` keybind is specified and Ghostty is launched
-/// or reloaded, Ghostty will attempt to request these permissions.
+/// to Railty. When a `global:` keybind is specified and Railty is launched
+/// or reloaded, Railty will attempt to request these permissions.
 /// If the permissions are not granted, the keybind will not work. On macOS,
 /// you can find these permissions in System Preferences -> Privacy & Security
 /// -> Accessibility.
@@ -1957,7 +1957,7 @@ class: ?[:0]const u8 = null,
 /// Key tables are available since Ghostty 1.3.0.
 keybind: Keybinds = .{},
 
-/// Remap modifier keys within Ghostty. This allows you to swap or reassign
+/// Remap modifier keys within Railty. This allows you to swap or reassign
 /// modifier keys at the application level without affecting system-wide
 /// settings.
 ///
@@ -1965,10 +1965,10 @@ keybind: Keybinds = .{},
 /// You can use generic names like `ctrl`, `alt`, `shift`, `super` (macOS:
 /// `cmd`/`command`) or sided names like `left_ctrl`, `right_alt`, etc.
 ///
-/// This will NOT change keyboard layout or key encodings outside of Ghostty.
+/// This will NOT change keyboard layout or key encodings outside of Railty.
 /// For example, on macOS, `option+a` may still produce `å` even if `option` is
 /// remapped to `ctrl`. Desktop environments usually handle key layout long
-/// before Ghostty receives the key events.
+/// before Railty receives the key events.
 ///
 /// Example:
 ///
@@ -1985,7 +1985,7 @@ keybind: Keybinds = .{},
 ///
 /// * This affects both keybind matching and terminal input encoding.
 ///   This does NOT impact keyboard layout or how keys are interpreted
-///   prior to Ghostty receiving them. For example, `option+a` on macOS
+///   prior to Railty receiving them. For example, `option+a` on macOS
 ///   may still produce `å` even if `option` is remapped to `ctrl`.
 ///
 /// * Generic modifiers (e.g. `ctrl`) match both left and right physical keys.
@@ -1996,7 +1996,7 @@ keybind: Keybinds = .{},
 ///
 /// * On macOS, bindings in the main menu will trigger before any remapping
 ///   is done. This is because macOS itself handles menu activation and
-///   this happens before Ghostty receives the key event. To workaround
+///   this happens before Railty receives the key event. To workaround
 ///   this, you should unbind the menu items and rebind them using your
 ///   desired modifier.
 ///
@@ -2123,7 +2123,7 @@ keybind: Keybinds = .{},
 
 /// Configure a preference for window decorations. This setting specifies
 /// a _preference_; the actual OS, desktop environment, window manager, etc.
-/// may override this preference. Ghostty will do its best to respect this
+/// may override this preference. Railty will do its best to respect this
 /// preference but it may not always be possible.
 ///
 /// Valid values:
@@ -2211,7 +2211,7 @@ keybind: Keybinds = .{},
 /// On macOS, if `macos-titlebar-style` is `tabs` or `transparent`, the window theme will be
 /// automatically set based on the luminosity of the terminal background color.
 /// This only applies to terminal windows. This setting will still apply to
-/// non-terminal windows within Ghostty.
+/// non-terminal windows within Railty.
 ///
 /// This is currently only supported on macOS and Linux.
 @"window-theme": WindowTheme = .auto,
@@ -2238,7 +2238,7 @@ keybind: Keybinds = .{},
 ///
 /// Note that the window manager may put limits on the size or override the
 /// size. For example, a tiling window manager may force the window to be a
-/// certain size to fit within the grid. There is nothing Ghostty will do about
+/// certain size to fit within the grid. There is nothing Railty will do about
 /// this, but it will make an effort.
 ///
 /// Sizes larger than the screen size will be clamped to the screen size.
@@ -2264,7 +2264,7 @@ keybind: Keybinds = .{},
 ///
 /// Note that the window manager may put limits on the position or override
 /// the position. For example, a tiling window manager may force the window
-/// to be a certain position to fit within the grid. There is nothing Ghostty
+/// to be a certain position to fit within the grid. There is nothing Railty
 /// will do about this, but it will make an effort.
 ///
 /// Also note that negative values are also up to the operating system and
@@ -2297,18 +2297,18 @@ keybind: Keybinds = .{},
 ///
 ///   * `never` will never save window state.
 ///
-///   * `always` will always save window state whenever Ghostty is exited.
+///   * `always` will always save window state whenever Railty is exited.
 ///
-/// If you change this value to `never` while Ghostty is not running, the next
-/// Ghostty launch will NOT restore the window state.
+/// If you change this value to `never` while Railty is not running, the next
+/// Railty launch will NOT restore the window state.
 ///
-/// If you change this value to `default` while Ghostty is not running and the
-/// previous exit saved state, the next Ghostty launch will still restore the
-/// window state. This is because Ghostty cannot know if the previous exit was
+/// If you change this value to `default` while Railty is not running and the
+/// previous exit saved state, the next Railty launch will still restore the
+/// window state. This is because Railty cannot know if the previous exit was
 /// due to a forced save or not (macOS doesn't provide this information).
 ///
-/// If you change this value so that window state is saved while Ghostty is not
-/// running, the previous window state will not be restored because Ghostty only
+/// If you change this value so that window state is saved while Railty is not
+/// running, the previous window state will not be restored because Railty only
 /// saves state on exit if this is enabled.
 ///
 /// The default value is `default`.
@@ -2478,14 +2478,14 @@ keybind: Keybinds = .{},
 /// The maximum size in bytes of a single clipboard write by a program
 /// running in the terminal via the Kitty clipboard protocol (OSC 5522).
 /// This doesn't apply to OSC 52, which is limited by the maximum length
-/// of an escape sequence hardcoded into Ghostty for now.
+/// of an escape sequence hardcoded into Railty for now.
 ///
 /// Data beyond the limit fails the entire write with an `EFBIG` status,
 /// discards the transaction, and leaves the clipboard untouched. Later
 /// write-related packets are ignored until a new write begins.
 ///
 /// The data is buffered in memory while the write is in progress, so
-/// this limit bounds how much memory a program can make Ghostty
+/// this limit bounds how much memory a program can make Railty
 /// allocate per write. A future improvement will attempt to spool large
 /// writes to disk.
 ///
@@ -2546,7 +2546,7 @@ keybind: Keybinds = .{},
 ///
 /// * `primary` - Copy to the selection clipboard only. On Linux this is the
 ///   primary selection that middle-click pastes. On macOS this is a separate
-///   pasteboard private to Ghostty that the `paste_from_selection` action
+///   pasteboard private to Railty that the `paste_from_selection` action
 ///   (Paste Selection in the Edit menu) reads, so selecting text does not
 ///   replace the contents of the system clipboard. (Available since: 1.4.0)
 ///
@@ -2630,7 +2630,7 @@ keybind: Keybinds = .{},
 /// config path ($XDG_CONFIG_HOME/ghostty/config.ghostty).
 ///
 /// If this is false, the default configuration paths will not be loaded.
-/// This is targeted directly at using Ghostty from the CLI in a way
+/// This is targeted directly at using Railty from the CLI in a way
 /// that minimizes external effects.
 ///
 /// This is a CLI-only configuration. Setting this in a configuration file
@@ -2657,7 +2657,7 @@ keybind: Keybinds = .{},
 /// See the documentation of `quit-after-last-window-closed-delay`.
 @"quit-after-last-window-closed": bool = builtin.target.os.tag == .linux,
 
-/// Controls how long Ghostty will stay running after the last open surface has
+/// Controls how long Railty will stay running after the last open surface has
 /// been closed. This only has an effect if `quit-after-last-window-closed` is
 /// also set to `true`.
 ///
@@ -2692,16 +2692,16 @@ keybind: Keybinds = .{},
 /// value larger than this will be clamped to the maximum value.
 ///
 /// By default `quit-after-last-window-closed-delay` is unset and
-/// Ghostty will quit immediately after the last window is closed if
+/// Railty will quit immediately after the last window is closed if
 /// `quit-after-last-window-closed` is `true`.
 ///
 /// Only implemented on Linux.
 @"quit-after-last-window-closed-delay": ?Duration = null,
 
-/// This controls whether an initial window is created when Ghostty
+/// This controls whether an initial window is created when Railty
 /// is run. Note that if `quit-after-last-window-closed` is `true` and
 /// `quit-after-last-window-closed-delay` is set, setting `initial-window` to
-/// `false` will mean that Ghostty will quit after the configured delay if no
+/// `false` will mean that Railty will quit after the configured delay if no
 /// window is ever created. Only implemented on Linux and macOS.
 @"initial-window": bool = true,
 
@@ -2765,7 +2765,7 @@ keybind: Keybinds = .{},
 ///   * `right` - Terminal appears at the right of the screen.
 ///   * `center` - Terminal appears at the center of the screen.
 ///
-/// On macOS, changing this configuration requires restarting Ghostty
+/// On macOS, changing this configuration requires restarting Railty
 /// completely.
 ///
 /// Note: There is no default keybind for toggling the quick terminal.
@@ -2840,7 +2840,7 @@ keybind: Keybinds = .{},
 ///  * `main` - The screen that the operating system recommends as the main
 ///    screen. On macOS, this is the screen that is currently receiving
 ///    keyboard input. This screen is defined by the operating system and
-///    not chosen by Ghostty.
+///    not chosen by Railty.
 ///
 ///  * `mouse` - The screen that the mouse is currently hovered over.
 ///
@@ -2986,20 +2986,20 @@ keybind: Keybinds = .{},
 ///     (Available since: 1.2.0)
 ///
 ///   * `ssh-terminfo` - Enable automatic terminfo installation on remote hosts.
-///     Attempts to install Ghostty's embedded terminfo entry using `tic` on local
+///     Attempts to install Railty's embedded terminfo entry using `tic` on local
 ///     cache misses. Requires `tic` to be available on remote hosts. Successful
 ///     installations are cached locally to avoid repeat installations.
 ///     If desired, the `+ssh-cache` CLI action can be used to manage the installation
 ///     cache manually using various arguments.
 ///     (Available since: 1.2.0)
 ///
-///   * `path` - Add Ghostty's binary directory to PATH. This ensures the `ghostty`
+///   * `path` - Add Railty's binary directory to PATH. This ensures the `ghostty`
 ///     command is available in the shell even if shell init scripts reset PATH.
 ///     This is particularly useful on macOS where PATH is often overridden by
 ///     system scripts. The directory is only added if not already present.
 ///
 /// SSH features work independently and can be combined for optimal experience:
-/// when both `ssh-env` and `ssh-terminfo` are enabled, Ghostty will install its
+/// when both `ssh-env` and `ssh-terminfo` are enabled, Railty will install its
 /// terminfo on remote hosts and use `xterm-ghostty` as TERM, falling back to
 /// `xterm-256color` with environment variables if terminfo installation fails.
 @"shell-integration-features": ShellIntegrationFeatures = .{},
@@ -3025,7 +3025,7 @@ keybind: Keybinds = .{},
 /// command-palette-entry = title:Reset Font Style, action:csi:0m
 /// command-palette-entry = title:Crash on Main Thread,description:Causes a crash on the main (UI) thread.,action:crash:main
 /// command-palette-entry = title:Focus Split: Right,description:"Focus the split to the right, if it exists.",action:goto_split:right
-/// command-palette-entry = title:"Ghostty",description:"Add a little Ghostty to your terminal.",action:"text:\xf0\x9f\x91\xbb"
+/// command-palette-entry = title:"Railty",description:"Add a little Railty to your terminal.",action:"text:\xf0\x9f\x9a\x84"
 /// ```
 ///
 /// There are some additional special values that can be specified for
@@ -3048,7 +3048,7 @@ keybind: Keybinds = .{},
 @"command-palette-entry": RepeatableCommand = .{},
 
 /// Sets the reporting format for OSC sequences that request color information.
-/// Ghostty currently supports OSC 10 (foreground), OSC 11 (background), and
+/// Railty currently supports OSC 10 (foreground), OSC 11 (background), and
 /// OSC 4 (256 color palette) queries, and by default the reported values
 /// are scaled-up RGB values, where each component are 16 bits. This is how
 /// most terminals report these values. However, some legacy applications may
@@ -3136,7 +3136,7 @@ keybind: Keybinds = .{},
 /// and its [control sequence documentation](https://github.com/ThomasDickey/xterm-snapshots/blob/xterm-411/ctlseqs.ms#L2562-L2569),
 /// but where those disagree with xterm's
 /// [implementation](https://github.com/ThomasDickey/xterm-snapshots/blob/xterm-411/screen.c#L3162-L3290),
-/// Ghostty follows the implementation. The documentation describes bit 3
+/// Railty follows the implementation. The documentation describes bit 3
 /// as omitting cells that were never written to, but xterm skips those
 /// cells by default and counts them as spaces with the bit set, which is
 /// `undrawn` here. It also lists a bit 5 that xterm doesn't implement.
@@ -3147,7 +3147,7 @@ keybind: Keybinds = .{},
 /// Custom shaders to run after the default shaders. This is a file path
 /// to a GLSL-syntax shader for all platforms.
 ///
-/// Warning: Invalid shaders can cause Ghostty to become unusable such as by
+/// Warning: Invalid shaders can cause Railty to become unusable such as by
 /// causing the window to be completely black. If this happens, you can
 /// unset this configuration to disable the shader.
 ///
@@ -3306,7 +3306,7 @@ keybind: Keybinds = .{},
 ///
 ///  * `attention` *(enabled by default)*
 ///
-///    Request the user's attention when Ghostty is unfocused, until it has
+///    Request the user's attention when Railty is unfocused, until it has
 ///    received focus again. On macOS, this will bounce the app icon in the
 ///    dock once. On Linux, the behavior depends on the desktop environment
 ///    and/or the window manager/compositor:
@@ -3315,7 +3315,7 @@ keybind: Keybinds = .{},
 ///      highlighted;
 ///
 ///    - On GNOME, you may receive a notification that, when clicked, would
-///      bring the Ghostty window into focus;
+///      bring the Railty window into focus;
 ///
 ///    - On Sway, the window may be decorated with a distinctly colored border;
 ///
@@ -3354,7 +3354,7 @@ keybind: Keybinds = .{},
 /// Available since: 1.2.0 on GTK, 1.3.0 on macOS.
 @"bell-audio-volume": f64 = 0.5,
 
-/// Control the in-app notifications that Ghostty shows.
+/// Control the in-app notifications that Railty shows.
 ///
 /// On Linux (GTK), in-app notifications show up as toasts. Toasts appear
 /// overlaid on top of the terminal window. They are used to show information
@@ -3468,7 +3468,7 @@ keybind: Keybinds = .{},
 /// When "hidden", the top titlebar area can no longer be used for dragging
 /// the window. To drag the window, you can use option+click on the resizable
 /// areas of the frame to drag the window. This is a standard macOS behavior
-/// and not something Ghostty enables.
+/// and not something Railty enables.
 ///
 /// The default value is "transparent". This is an opinionated choice
 /// but its one I think is the most aesthetically pleasing and works in
@@ -3499,7 +3499,7 @@ keybind: Keybinds = .{},
 @"macos-titlebar-proxy-icon": MacTitlebarProxyIcon = .visible,
 
 /// Controls the windowing behavior when dropping a file or folder
-/// onto the Ghostty icon in the macOS dock.
+/// onto the Railty icon in the macOS dock.
 ///
 /// Valid values are:
 ///
@@ -3574,12 +3574,12 @@ keybind: Keybinds = .{},
 /// Available since: 1.2.0
 @"macos-hidden": MacHidden = .never,
 
-/// If true, Ghostty on macOS will automatically enable the "Secure Input"
+/// If true, Railty on macOS will automatically enable the "Secure Input"
 /// feature when it detects that a password prompt is being displayed.
 ///
 /// "Secure Input" is a macOS security feature that prevents applications from
 /// reading keyboard events. This can always be enabled manually using the
-/// `Ghostty > Secure Keyboard Entry` menu item.
+/// `Railty > Secure Keyboard Entry` menu item.
 ///
 /// Note that automatic password prompt detection is based on heuristics
 /// and may not always work as expected. Specifically, it does not work
@@ -3592,7 +3592,7 @@ keybind: Keybinds = .{},
 /// reading keyboard events.
 @"macos-auto-secure-input": bool = true,
 
-/// If true, Ghostty will show a graphical indication when secure input is
+/// If true, Railty will show a graphical indication when secure input is
 /// enabled. This indication is generally recommended to know when secure input
 /// is enabled.
 ///
@@ -3602,7 +3602,7 @@ keybind: Keybinds = .{},
 /// you may want to disable it.
 @"macos-secure-input-indication": bool = true,
 
-/// If true, Ghostty exposes and handles the built-in AppleScript dictionary
+/// If true, Railty exposes and handles the built-in AppleScript dictionary
 /// on macOS.
 ///
 /// If false, all AppleScript interactions are disabled. This includes
@@ -3623,13 +3623,13 @@ keybind: Keybinds = .{},
 ///
 /// Valid values:
 ///
-///  * `official` - Use the official Ghostty icon.
+///  * `official` - Use the official Railty icon.
 ///  * `blueprint`, `chalkboard`, `microchip`, `glass`, `holographic`,
-///    `paper`, `retro`, `xray` - Official variants of the Ghostty icon
+///    `paper`, `retro`, `xray` - Official variants of the Railty icon
 ///    hand-created by artists (no AI).
 ///  * `custom` - Use a completely custom icon. The location must be specified
 ///    using the additional `macos-custom-icon` configuration
-///  * `custom-style` - Use the official Ghostty icon but with custom
+///  * `custom-style` - Use the official Railty icon but with custom
 ///    styles applied to various layers. The custom styles must be
 ///    specified using the additional `macos-icon`-prefixed configurations.
 ///    The `macos-icon-ghost-color` and `macos-icon-screen-color`
@@ -3650,7 +3650,7 @@ keybind: Keybinds = .{},
 /// The absolute path to the custom icon file.
 /// Supported formats include PNG, JPEG, and ICNS.
 ///
-/// Defaults to `~/.config/ghostty/Ghostty.icns`
+/// Defaults to `~/.config/railty/Railty.icns`
 @"macos-custom-icon": ?[:0]const u8 = null,
 
 /// The material to use for the frame of the macOS app icon.
@@ -3686,10 +3686,10 @@ keybind: Keybinds = .{},
 /// `custom-style`.
 @"macos-icon-screen-color": ?ColorList = null,
 
-/// Whether macOS Shortcuts are allowed to control Ghostty.
+/// Whether macOS Shortcuts are allowed to control Railty.
 ///
-/// Ghostty exposes a number of actions that allow Shortcuts to
-/// control and interact with Ghostty. This includes creating new
+/// Railty exposes a number of actions that allow Shortcuts to
+/// control and interact with Railty. This includes creating new
 /// terminals, sending text to terminals, running commands, invoking
 /// any keybind action, etc.
 ///
@@ -3699,13 +3699,13 @@ keybind: Keybinds = .{},
 ///
 /// Valid values are:
 ///
-/// * `ask` - Ask the user whether for permission. Ghostty will remember
+/// * `ask` - Ask the user whether for permission. Railty will remember
 ///   this choice and never ask again. This is similar to other macOS
 ///   permissions such as microphone access, camera access, etc.
 ///
-/// * `allow` - Allow Shortcuts to control Ghostty without asking.
+/// * `allow` - Allow Shortcuts to control Railty without asking.
 ///
-/// * `deny` - Deny Shortcuts from controlling Ghostty.
+/// * `deny` - Deny Shortcuts from controlling Railty.
 ///
 /// Available since: 1.2.0
 @"macos-shortcuts": MacShortcuts = .ask,
@@ -3714,7 +3714,7 @@ keybind: Keybinds = .{},
 ///
 /// This allows per-surface resource management. For example, if a shell program
 /// is using too much memory, only that shell will be killed by the oom monitor
-/// instead of the entire Ghostty process. Similarly, if a shell program is
+/// instead of the entire Railty process. Similarly, if a shell program is
 /// using too much CPU, only that surface will be CPU-throttled.
 ///
 /// This will cause startup times to be slower (a hundred milliseconds or so),
@@ -3725,7 +3725,7 @@ keybind: Keybinds = .{},
 /// big benefit.
 ///
 /// This feature requires `systemd`. If `systemd` is unavailable, cgroup
-/// initialization will fail. By default, this will not prevent Ghostty from
+/// initialization will fail. By default, this will not prevent Railty from
 /// working (see `linux-cgroup-hard-fail`).
 ///
 /// Changing this value and reloading the config will not affect existing
@@ -3799,11 +3799,11 @@ else
 /// the following scenarios is found:
 ///
 /// 1. TERM_PROGRAM environment variable is a non-empty value. In this
-/// case, we assume Ghostty is being launched from a graphical terminal
+/// case, we assume Railty is being launched from a graphical terminal
 /// session and you want a dedicated instance.
 ///
 /// 2. Any CLI arguments exist. In this case, we assume you are passing
-/// custom Ghostty configuration. Single instance mode inherits the
+/// custom Railty configuration. Single instance mode inherits the
 /// configuration from when it was launched, so we must disable single
 /// instance to load the new configuration.
 ///
@@ -3899,7 +3899,7 @@ else
 ///
 /// Launch Ghostty with `env GTK_DEBUG=interactive ghostty` to tweak Ghostty's
 /// CSS in real time using the GTK Inspector. Errors in your CSS files would
-/// also be reported in the terminal you started Ghostty from. See
+/// also be reported in the terminal you started Railty from. See
 /// https://developer.gnome.org/documentation/tools/inspector.html for more
 /// information about the GTK Inspector.
 ///
@@ -3978,7 +3978,7 @@ term: []const u8 = "xterm-ghostty",
 ///   * `epoll` - Use the `epoll` API
 ///   * `io_uring` - Use the `io_uring` API
 ///
-/// If the selected backend is not available on the platform, Ghostty will
+/// If the selected backend is not available on the platform, Railty will
 /// fall back to an automatically chosen backend that is available.
 ///
 /// Changing this value requires a full application restart to take effect.
@@ -3989,51 +3989,14 @@ term: []const u8 = "xterm-ghostty",
 /// Available since: 1.2.0
 @"async-backend": AsyncBackend = .auto,
 
-/// Control the auto-update functionality of Ghostty. This is only supported
-/// on macOS currently, since Linux builds are distributed via package
-/// managers that are not centrally controlled by Ghostty.
-///
-/// Checking or downloading an update does not send any information to
-/// the project beyond standard network information mandated by the
-/// underlying protocols. To put it another way: Ghostty doesn't explicitly
-/// add any tracking to the update process. The update process works by
-/// downloading information about the latest version and comparing it
-/// client-side to the current version.
-///
-/// Valid values are:
-///
-///  * `off` - Disable auto-updates.
-///  * `check` - Check for updates and notify the user if an update is
-///    available, but do not automatically download or install the update.
-///  * `download` - Check for updates, automatically download the update,
-///    notify the user, but do not automatically install the update.
-///
-/// If unset, we defer to Sparkle's default behavior, which respects the
-/// preference stored in the standard user defaults (`defaults(1)`).
-///
-/// Changing this value at runtime works after a small delay.
+/// This option is accepted for compatibility with Ghostty configuration
+/// files, but it has no effect in Railty. Railty updates are distributed
+/// through GitHub Releases and the Homebrew cask.
 @"auto-update": ?AutoUpdate = null,
 
-/// The release channel to use for auto-updates.
-///
-/// The default value of this matches the release channel of the currently
-/// running Ghostty version. If you download a pre-release version of Ghostty
-/// then this will be set to `tip` and you will receive pre-release updates.
-/// If you download a stable version of Ghostty then this will be set to
-/// `stable` and you will receive stable updates.
-///
-/// Valid values are:
-///
-///  * `stable` - Stable, tagged releases such as "1.0.0".
-///  * `tip` - Pre-release versions generated from each commit to the
-///    main branch. This is the version that was in use during private
-///    beta testing by thousands of people. It is generally stable but
-///    will likely have more bugs than the stable channel.
-///
-/// Changing this configuration requires a full restart of
-/// Ghostty to take effect.
-///
-/// This only works on macOS since only macOS has an auto-update feature.
+/// This option is accepted for compatibility with Ghostty configuration
+/// files, but it has no effect in Railty. Railty updates are distributed
+/// through GitHub Releases and the Homebrew cask.
 @"auto-update-channel": ?build_config.ReleaseChannel = null,
 
 /// This is set by the CLI parser for deinit.
@@ -5367,7 +5330,7 @@ pub const ChangeIterator = struct {
 };
 
 /// This runs a heuristic to determine if we are likely running
-/// Ghostty in a CLI environment. We need this to change some behaviors.
+/// Railty in a CLI environment. We need this to change some behaviors.
 /// We should keep the set of behaviors that depend on this as small
 /// as possible because magic sucks, but each place is well documented.
 fn probableCliEnvironment() bool {

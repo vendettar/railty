@@ -16,8 +16,8 @@ const usage =
     \\Usage: ghostty +ssh [flags] [--] <ssh args...>
     \\
     \\Flags:
-    \\  --forward-env[=bool]  Send Ghostty env vars to the remote. Default: true.
-    \\  --terminfo[=bool]     Install Ghostty terminfo on first connect. Default: true.
+    \\  --forward-env[=bool]  Send Railty env vars to the remote. Default: true.
+    \\  --terminfo[=bool]     Install Railty terminfo on first connect. Default: true.
     \\  --cache[=bool]        Use the terminfo install cache. Default: true.
     \\  --ssh=<path>          Path to the ssh binary. Default: first `ssh` on PATH.
     \\  --verbose             Print +ssh status lines to stderr.
@@ -35,7 +35,7 @@ pub const Options = struct {
     /// the remote host. Maps to the `ssh-env` shell integration feature.
     @"forward-env": bool = true,
 
-    /// Install Ghostty's terminfo on the remote host and use
+    /// Install Railty's terminfo on the remote host and use
     /// `xterm-ghostty` as `TERM` when it's available. Maps to the
     /// `ssh-terminfo` shell integration feature.
     terminfo: bool = true,
@@ -102,7 +102,7 @@ pub const Options = struct {
     }
 };
 
-/// Wrap `ssh` to automatically configure Ghostty terminal integration on
+/// Wrap `ssh` to automatically configure Railty terminal integration on
 /// remote hosts.
 ///
 /// Any arguments that aren't recognized as `+ssh` flags are passed to
@@ -111,7 +111,7 @@ pub const Options = struct {
 /// has no long flags, and `+ssh` defines no short flags, so there's
 /// nothing to collide.
 ///
-/// This is typically called via Ghostty's shell integration. When
+/// This is typically called via Railty's shell integration. When
 /// `shell-integration-features` includes `ssh-env` or `ssh-terminfo`,
 /// each shell defines an `ssh` function that runs:
 ///
@@ -124,16 +124,16 @@ pub const Options = struct {
 /// Before it starts `ssh`, `+ssh` can do two pieces of setup. Both are
 /// on by default, and each has its own flag:
 ///
-///   1. **Forward Ghostty's environment** (`--forward-env`). Asks `ssh` to
+///   1. **Forward Railty's environment** (`--forward-env`). Asks `ssh` to
 ///      send `COLORTERM`, `TERM_PROGRAM`, and `TERM_PROGRAM_VERSION` to the
 ///      remote host using `SendEnv`. Programs on the remote host can use
-///      these to tell that they're running inside Ghostty. The remote
+///      these to tell that they're running inside Railty. The remote
 ///      server only accepts them if its `sshd_config` allows them:
 ///
 ///          AcceptEnv COLORTERM TERM_PROGRAM TERM_PROGRAM_VERSION
 ///
-///   2. **Install Ghostty's terminfo** (`--terminfo`). The first time you
-///      connect to a host, `+ssh` copies Ghostty's terminfo entry to it and
+///   2. **Install Railty's terminfo** (`--terminfo`). The first time you
+///      connect to a host, `+ssh` copies Railty's terminfo entry to it and
 ///      compiles it with `tic`. This teaches programs on the remote host
 ///      how to use the `xterm-ghostty` terminal type. Successful installs
 ///      are cached (see `ghostty +ssh-cache`), so later connections to the
@@ -170,7 +170,7 @@ pub const Options = struct {
 ///   * `--forward-env=<bool>`: Send `COLORTERM`, `TERM_PROGRAM`, and
 ///     `TERM_PROGRAM_VERSION` to the remote host. Default: `true`.
 ///
-///   * `--terminfo=<bool>`: Install Ghostty's terminfo on the first
+///   * `--terminfo=<bool>`: Install Railty's terminfo on the first
 ///     connection to each host, and use `xterm-ghostty` as `TERM` when it's
 ///     available. Default: `true`.
 ///
@@ -192,7 +192,7 @@ pub const Options = struct {
 ///     # Basic invocation using defaults:
 ///     ghostty +ssh user@example.com
 ///
-///     # Forward Ghostty env vars but skip the terminfo install.
+///     # Forward Railty env vars but skip the terminfo install.
 ///     # The remote session uses TERM=xterm-256color:
 ///     ghostty +ssh --terminfo=false user@example.com
 ///
@@ -529,7 +529,7 @@ fn parseDestination(alloc: Allocator, stdout: []const u8) ?[]const u8 {
     return alloc.print("{s}@{s}:{s}", .{ user, host, port }) catch null;
 }
 
-/// Install Ghostty's terminfo on the remote host over a short-lived SSH
+/// Install Railty's terminfo on the remote host over a short-lived SSH
 /// ControlMaster connection. The master tears down with the client
 /// (`ControlPersist=no`) so no socket lingers.
 fn installRemoteTerminfo(

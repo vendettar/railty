@@ -635,7 +635,7 @@ const Subprocess = struct {
 
         // If we have a resources dir then set our env var
         if (cfg.resources_dir) |dir| {
-            log.info("found Ghostty resources dir: {s}", .{dir});
+            log.info("found Railty resources dir: {s}", .{dir});
             try env.put("GHOSTTY_RESOURCES_DIR", dir);
         }
 
