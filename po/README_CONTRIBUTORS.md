@@ -77,7 +77,7 @@ requires any updates. You can update the translation template by running
 for other locales (`.po` files) to reflect the state of the template file.
 
 During the build process, each locale in `.po` files is compiled
-into binary `.mo` files, stored under `share/locale/<LOCALE>/LC_MESSAGES/com.mitchellh.ghostty.mo`.
+into binary `.mo` files, stored under `share/locale/<LOCALE>/LC_MESSAGES/com.vendettar.railty.mo`.
 This can be directly accessed by `libintl`, which provide the various `gettext`
 C functions that can be called either by Zig code directly, or by the GTK builder
 (recommended).

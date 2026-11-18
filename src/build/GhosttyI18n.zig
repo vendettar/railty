@@ -6,7 +6,13 @@ const Config = @import("Config.zig");
 const gresource = @import("../apprt/gtk/build/gresource.zig");
 const locales = @import("../os/i18n_locales.zig").locales;
 
-const domain = "com.mitchellh.ghostty";
+/// Gettext domain used at runtime. This must match `build_config.bundle_id`
+/// so the installed `.mo` files are found by `dgettext`.
+const domain = "com.vendettar.railty";
+
+/// Translation template filename, kept from upstream so the existing
+/// translation tooling and contributor docs continue to work.
+const pot_name = "com.mitchellh.ghostty";
 
 owner: *std.Build,
 steps: []*std.Build.Step,
@@ -186,7 +192,7 @@ fn createUpdateStep(b: *std.Build) !*std.Build.Step {
     const usf = b.addUpdateSourceFiles();
     usf.addCopyFileToSource(
         xgettext_merge.captureStdOut(.{}),
-        "po/" ++ domain ++ ".pot",
+        "po/" ++ pot_name ++ ".pot",
     );
 
     inline for (locales) |locale| {
