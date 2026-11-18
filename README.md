@@ -47,8 +47,7 @@ You can also download `Railty-macos-arm64.zip` directly from
   **not** a Universal binary; Intel builds are not shipped yet.
 - Signing: release builds use a stable ad-hoc signature unless the maintainer
   has configured Developer ID signing and notarization. Unsigned builds do not
-  enable Hardened Runtime, because the bundled Sparkle framework has no
-  matching Team ID. Such builds may be blocked by macOS Gatekeeper; Homebrew
+  enable Hardened Runtime. Such builds may be blocked by macOS Gatekeeper; Homebrew
   installs normally clear the download quarantine. To approve a manually
   downloaded copy, use System Settings → Privacy & Security, or right-click
   the app and choose Open.

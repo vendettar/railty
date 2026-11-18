@@ -56,9 +56,6 @@ class BaseTerminalController: NSWindowController,
     /// This can be set to show/hide the command palette.
     @Published var commandPaletteIsShowing: Bool = false
 
-    /// Set if the terminal view should show the update overlay.
-    @Published var updateOverlayIsVisible: Bool = false
-
     /// True when any surface in this controller currently has an active bell.
     @Published private(set) var bell: Bool = false
 
@@ -107,7 +104,7 @@ class BaseTerminalController: NSWindowController,
     }
 
     /// The last computed title from the focused surface (without the override).
-    private var lastComputedTitle: String = "👻"
+    private var lastComputedTitle: String = "🚄"
 
     /// The time that undo/redo operations that contain running ptys are valid for.
     var undoExpiration: Duration {
@@ -151,8 +148,13 @@ class BaseTerminalController: NSWindowController,
         // Initialize our initial surface, injecting IPC environment variables.
         guard let ghostty_app = ghostty.app else { preconditionFailure("app must be loaded") }
         var config = base ?? Ghostty.SurfaceConfiguration()
-        config.environmentVariables["GHOSTTY_SOCKET"] = "/tmp/ghostty-\(getuid()).sock"
+        // Expose the IPC endpoint to child shells. The legacy GHOSTTY_*
+        // variables remain for scripts that have not migrated yet.
+        let socketPath = "/tmp/railty-\(getuid()).sock"
+        config.environmentVariables["RAILTY_SOCKET"] = socketPath
+        config.environmentVariables["GHOSTTY_SOCKET"] = socketPath
         let surfaceUUID = UUID()
+        config.environmentVariables["RAILTY_TAB_ID"] = surfaceUUID.uuidString
         config.environmentVariables["GHOSTTY_TAB_ID"] = surfaceUUID.uuidString
         self.surfaceTree = tree ?? .init(view: Ghostty.SurfaceView(ghostty_app, baseConfig: config, uuid: surfaceUUID))
         Self.updateSurfaceControllers(self, from: .init(), to: surfaceTree)
@@ -899,7 +901,7 @@ class BaseTerminalController: NSWindowController,
                 .store(in: &focusedSurfaceCancellables)
         } else {
             // There is no surface to listen to titles for.
-            titleDidChange(to: "👻")
+            titleDidChange(to: "🚄")
         }
     }
 
@@ -1141,15 +1143,6 @@ class BaseTerminalController: NSWindowController,
     func fullscreenDidChange() {
         guard let fullscreenStyle else { return }
 
-        // When we enter fullscreen, we want to show the update overlay so that it
-        // is easily visible. For native fullscreen this is visible by showing the
-        // menubar but we don't want to rely on that.
-        if fullscreenStyle.isFullscreen {
-            updateOverlayIsVisible = true
-        } else {
-            updateOverlayIsVisible = defaultUpdateOverlayVisibility()
-        }
-
         // Always resync our appearance
         syncAppearance()
     }
@@ -1171,28 +1164,6 @@ class BaseTerminalController: NSWindowController,
             fullscreenStyle = NativeFullscreen(window)
             fullscreenStyle?.delegate = self
         }
-
-        // Set our update overlay state
-        updateOverlayIsVisible = defaultUpdateOverlayVisibility()
-    }
-
-    func defaultUpdateOverlayVisibility() -> Bool {
-        guard let window else { return true }
-
-        // No titlebar we always show the update overlay because it can't support
-        // updates in the titlebar
-        guard window.styleMask.contains(.titled) else {
-            return true
-        }
-
-        // If it's a non terminal window we can't trust it has an update accessory,
-        // so we always want to show the overlay.
-        guard let window = window as? TerminalWindow else {
-            return true
-        }
-
-        // Show the overlay if the window isn't.
-        return !window.supportsUpdateAccessory
     }
 
     // MARK: NSWindowDelegate

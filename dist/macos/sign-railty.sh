@@ -71,7 +71,7 @@ for path in sorted(set(entries), key=lambda p: p.count(os.sep), reverse=True):
 PY
 )
 
-ENTITLEMENTS="macos/Ghostty.entitlements"
+ENTITLEMENTS="macos/Railty.entitlements"
 if [[ "$ADHOC" == "true" ]]; then
   /usr/bin/codesign --verbose -f -s "$IDENTITY" \
     --entitlements "$ENTITLEMENTS" "$APP_PATH"

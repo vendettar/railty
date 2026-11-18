@@ -5,7 +5,7 @@ import OSLog
 
 /// A Unix domain socket server that allows external processes to control Ghostty tabs.
 ///
-/// Protocol: newline-delimited JSON over a Unix domain socket at `/tmp/ghostty-{uid}.sock`.
+/// Protocol: newline-delimited JSON over a Unix domain socket at `/tmp/railty-{uid}.sock`.
 ///
 /// Request format:
 /// ```json
@@ -18,11 +18,11 @@ import OSLog
 /// {"ok": false, "error": "message"}
 /// ```
 @MainActor
-final class GhosttyIPCServer {
-    static let shared = GhosttyIPCServer()
+final class RailtyIPCServer {
+    static let shared = RailtyIPCServer()
 
     private static let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "com.mitchellh.ghostty",
+        subsystem: Bundle.main.bundleIdentifier ?? "com.vendettar.railty",
         category: "IPC"
     )
 
@@ -91,9 +91,9 @@ final class GhosttyIPCServer {
 
     func start() {
         let uid = getuid()
-        socketPath = "/tmp/ghostty-\(uid).sock"
+        socketPath = "/tmp/railty-\(uid).sock"
 
-        // If a live Ghostty already owns the socket, defer to it (first instance
+        // If a live Railty already owns the socket, defer to it (first instance
         // wins). Clear socketPath so stop() won't touch someone else's file.
         if isSocketAlive(socketPath) {
             Self.logger.info("IPC: socket already owned by a live instance; not starting server")

@@ -13,7 +13,7 @@ pub const Errors = error{
 };
 
 pub const Target = union(Key) {
-    /// Open up a new window in a custom instance of Ghostty.
+    /// Open up a new window in a custom instance of Railty.
     class: [:0]const u8,
 
     /// Detect which instance to open a new window in.

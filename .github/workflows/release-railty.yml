@@ -266,13 +266,6 @@ jobs:
           echo "start=$T0" >> "$GITHUB_OUTPUT"
           echo "end=$T1" >> "$GITHUB_OUTPUT"
 
-      - name: Cache Swift Package dependencies
-        id: spm_cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: macos/.spm-cache
-          key: spm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('macos/Ghostty.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
-
       - name: Detect signing configuration
         id: signing_state
         env:
@@ -295,12 +288,11 @@ jobs:
           set -euo pipefail
           T0=$(date +%s)
           # Without a stable Developer ID team, hardened runtime library
-          # validation rejects the separately built Sparkle framework.
+          # validation rejects the separately built GhosttyKit framework.
           HARDENED=NO
           [[ "$SIGNED" == "true" ]] && HARDENED=YES
           cd macos
           xcodebuild -target Ghostty -configuration Release -arch arm64 \
-            -clonedSourcePackagesDirPath "${GITHUB_WORKSPACE}/macos/.spm-cache" \
             SYMROOT=build CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
             ENABLE_HARDENED_RUNTIME="$HARDENED"
           T1=$(date +%s)
@@ -323,10 +315,6 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$INFO"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(git rev-list --count HEAD)" "$INFO"
           /usr/libexec/PlistBuddy -c "Set :GhosttyCommit $(git rev-parse --short HEAD)" "$INFO"
-          # Sparkle points at the upstream Ghostty release server; Railty uses
-          # Homebrew/GitHub Releases instead, so disable its update checks.
-          /usr/libexec/PlistBuddy -c "Delete :SUEnableAutomaticChecks" "$INFO" || true
-          /usr/libexec/PlistBuddy -c "Delete :SUPublicEDKey" "$INFO" || true
 
       - name: Optional Developer ID signing
         env:
@@ -380,7 +368,7 @@ jobs:
               echo "Signed with a configured Developer ID certificate."
             else
               echo "> Unsigned/ad-hoc test build: no Developer ID signing or notarization credentials are configured."
-              echo "> Hardened Runtime is not enabled for this ad-hoc build because the separately built Sparkle framework has no matching Team ID; Gatekeeper may still block a manually downloaded copy."
+              echo "> Hardened Runtime is not enabled for this ad-hoc build; Gatekeeper may still block a manually downloaded copy."
               echo "> Homebrew installs clear the download quarantine, but you may still need to approve the app in System Settings."
             fi
             if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
@@ -430,7 +418,6 @@ jobs:
           PUBLISHED: ${{ steps.version.outputs.published }}
           SHA256: ${{ steps.package.outputs.sha256 }}
           ZIG_CACHE_HIT: ${{ steps.zig_build_cache.outputs.cache-hit }}
-          SPM_CACHE_HIT: ${{ steps.spm_cache.outputs.cache-hit }}
         shell: bash
         run: |
           set -euo pipefail
@@ -465,7 +452,7 @@ jobs:
             echo "Version:      v${VERSION:-unknown} (tag: ${TAG:-unknown}, published: ${PUBLISHED:-false})"
             echo "Environment:  ${ENV_DUR}"
             echo "GhosttyKit:   ${GK_DUR} (zig cache hit: ${ZIG_CACHE_HIT:-false})"
-            echo "Xcode Build:  ${XC_DUR} (spm cache hit: ${SPM_CACHE_HIT:-false})"
+            echo "Xcode Build:  ${XC_DUR}"
             echo "Packaging:    ${PKG_DUR}"
             echo "Release:      ${REL_DUR}"
             echo "Total:        ${TOT_DUR}"

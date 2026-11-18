@@ -6,7 +6,8 @@
 
 set -euo pipefail
 
-SOCKET_PATH="${GHOSTTY_SOCKET:-/tmp/ghostty-$(id -u).sock}"
+SOCKET_PATH="${RAILTY_SOCKET:-${GHOSTTY_SOCKET:-/tmp/railty-$(id -u).sock}}"
+TAB_ID="${RAILTY_TAB_ID:-${GHOSTTY_TAB_ID:-}}"
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -30,9 +31,11 @@ Commands:
   current                  Get current tab info (JSON)
 
 Environment:
-  GHOSTTY_SOCKET   Override the IPC socket path
-                   (default: /tmp/ghostty-<uid>.sock)
-  GHOSTTY_TAB_ID   If set, targets that specific tab
+  RAILTY_SOCKET    Override the IPC socket path
+                   (default: /tmp/railty-<uid>.sock)
+  RAILTY_TAB_ID    If set, targets that specific tab
+  GHOSTTY_SOCKET, GHOSTTY_TAB_ID
+                   Legacy names, still accepted for compatibility
 
 Options:
   --help, -h       Show this help message
@@ -52,8 +55,8 @@ json_escape() {
 
 # Build the optional "tab_id" JSON fragment for inside params object.
 tab_id_param() {
-    if [[ -n "${GHOSTTY_TAB_ID:-}" ]]; then
-        printf '"tab_id": "%s", ' "$(json_escape "$GHOSTTY_TAB_ID")"
+    if [[ -n "$TAB_ID" ]]; then
+        printf '"tab_id": "%s", ' "$(json_escape "$TAB_ID")"
     fi
 }
 

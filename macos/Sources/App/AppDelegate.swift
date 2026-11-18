@@ -2,7 +2,6 @@ import AppKit
 import SwiftUI
 import UserNotifications
 import OSLog
-import Sparkle
 import GhosttyKit
 
 class AppDelegate: NSObject,
@@ -148,12 +147,6 @@ class AppDelegate: NSObject,
         }
     }
 
-    /// Manages updates
-    let updateController = UpdateController()
-    var updateViewModel: UpdateViewModel {
-        updateController.viewModel
-    }
-
     /// The elapsed time since the process was started
     var timeSinceLaunch: TimeInterval {
         return ProcessInfo.processInfo.systemUptime - applicationLaunchTime
@@ -235,13 +228,13 @@ class AppDelegate: NSObject,
         // Initial config loading
         ghosttyConfigDidChange(config: ghostty.config)
 
-        // Start our update checker.
-        updateController.startUpdater()
+        // Railty updates are distributed through GitHub Releases and the
+        // Homebrew cask.
 
         // Register our service provider. This must happen after everything is initialized.
         NSApp.servicesProvider = ServiceProvider()
 
-        // This registers the Ghostty => Services menu to exist.
+        // This registers the Railty => Services menu to exist.
         NSApp.servicesMenu = menuServices
 
         // Setup a local event monitor for app-level keyboard shortcuts. See
@@ -316,7 +309,7 @@ class AppDelegate: NSObject,
         center.delegate = self
 
         // Start IPC socket server
-        GhosttyIPCServer.shared.start()
+        RailtyIPCServer.shared.start()
 
         // Observe our appearance so we can report the correct value to libghostty.
         self.appearanceObserver = NSApplication.shared.observe(
@@ -399,12 +392,6 @@ class AppDelegate: NSObject,
         let windows = NSApplication.shared.windows
         if windows.isEmpty { return .terminateNow }
 
-        // If we've already accepted to install an update, then we don't need to
-        // confirm quit. The user is already expecting the update to happen.
-        if updateController.shouldTerminateWithoutWarning {
-            return .terminateNow
-        }
-
         // If the user is shutting down, restarting, or logging out, we don't confirm quit.
         why: if let event = NSAppleEventManager.shared().currentAppleEvent {
             // If all Ghostty windows are in the background (i.e. you Cmd-Q from the Cmd-Tab
@@ -430,7 +417,7 @@ class AppDelegate: NSObject,
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        GhosttyIPCServer.shared.stop()
+        RailtyIPCServer.shared.stop()
 
         // We have no notifications we want to persist after death,
         // so remove them all now. In the future we may want to be
@@ -834,27 +821,8 @@ class AppDelegate: NSObject,
         default: UserDefaults.ghostty.removeObject(forKey: "NSQuitAlwaysKeepsWindows")
         }
 
-        // Sync our auto-update settings. If SUEnableAutomaticChecks (in our Info.plist) is
-        // explicitly false (NO), auto-updates are disabled. Otherwise, we use the behavior
-        // defined by our "auto-update" configuration (if set) or fall back to Sparkle
-        // user-based defaults.
-        if Bundle.main.infoDictionary?["SUEnableAutomaticChecks"] as? Bool == false {
-            updateController.updater.automaticallyChecksForUpdates = false
-            updateController.updater.automaticallyDownloadsUpdates = false
-        } else if let autoUpdate = config.autoUpdate {
-            updateController.updater.automaticallyChecksForUpdates =
-                autoUpdate == .check || autoUpdate == .download
-            updateController.updater.automaticallyDownloadsUpdates =
-                autoUpdate == .download
-            /*
-             To test `auto-update` easily, uncomment the line below and
-             delete `SUEnableAutomaticChecks` in Ghostty-Info.plist.
-
-             Note: When `auto-update = download`, you may need to
-             `Clean Build Folder` if a background install has already begun.
-             */
-            // updateController.updater.checkForUpdatesInBackground()
-        }
+        // Users update Railty through GitHub Releases or
+        // `brew upgrade --cask railty`.
 
         // Config could change keybindings, so update everything that depends on that
         DispatchQueue.main.async {
@@ -1016,9 +984,9 @@ class AppDelegate: NSObject,
         ghostty.reloadConfig()
     }
 
-    @IBAction func checkForUpdates(_ sender: Any?) {
-        updateController.checkForUpdates()
-        // UpdateSimulator.happyPath.simulate(with: updateViewModel)
+    @IBAction func openReleases(_ sender: Any?) {
+        guard let url = URL(string: "https://github.com/vendettar/railty/releases") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     @IBAction func newWindow(_ sender: Any?) {
@@ -1042,7 +1010,7 @@ class AppDelegate: NSObject,
     }
 
     @IBAction func showHelp(_ sender: Any) {
-        guard let url = URL(string: "https://ghostty.org/docs") else { return }
+        guard let url = URL(string: "https://github.com/vendettar/railty") else { return }
         NSWorkspace.shared.open(url)
     }
 
