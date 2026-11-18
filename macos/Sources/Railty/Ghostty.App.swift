@@ -29,11 +29,6 @@ extension Ghostty {
 
         /// Preferred config file than the default ones
         private var configPath: String?
-
-        /// The index of the theme currently applied by the `toggle_theme`
-        /// action within the `theme-cycle` configuration list. This is
-        /// session-only state and is reset when the configuration is reloaded.
-        private var themeCycleIndex: Int?
         /// The ghostty app instance. We only have one of these for the entire app, although I guess
         /// in theory you can have multiple... I don't know why you would...
         @Published var app: ghostty_app_t? {
@@ -164,7 +159,6 @@ extension Ghostty {
 
             ghostty_app_update_config(app, newConfig.config!)
             /// applied config will be updated in ``Self.configChange(_:target:v:)``
-            themeCycleIndex = nil
         }
 
         func reloadConfig(surface: ghostty_surface_t, soft: Bool = false) {
@@ -186,25 +180,130 @@ extension Ghostty {
             ghostty_surface_update_config(surface, newConfig.config!)
         }
 
-        /// Cycle to the next theme in the `theme-cycle` configuration.
-        func toggleTheme() {
-            guard let app = self.app else { return }
+        /// The path to the user's configuration file.
+        private var userConfigPath: String {
+            configPath ?? Ghostty.AllocatedString(ghostty_config_open_path()).string
+        }
 
+        /// The theme currently set in the user's configuration file, if any.
+        var currentThemeName: String? {
+            guard let contents = try? String(contentsOfFile: userConfigPath, encoding: .utf8) else {
+                return nil
+            }
+            return Self.themeName(fromConfig: contents)
+        }
+
+        /// Cycle to the next theme in the `theme-cycle` configuration and
+        /// persist the selection.
+        func toggleTheme() {
             let themes = config.themeCycle
             guard !themes.isEmpty else {
                 Ghostty.logger.warning("toggle_theme: theme-cycle is not configured")
                 return
             }
 
-            let nextIndex = themeCycleIndex.map { ($0 + 1) % themes.count } ?? 0
-            let theme = themes[nextIndex]
+            let currentIndex = currentThemeName.flatMap { themes.firstIndex(of: $0) }
+            let theme = themes[((currentIndex ?? -1) + 1) % themes.count]
+            applyTheme(theme)
+        }
+
+        /// Apply the given theme and persist it to the user's configuration
+        /// file so the choice survives restarts.
+        func applyTheme(_ theme: String) {
+            guard let app = self.app else { return }
+
+            if persistTheme(theme) {
+                reloadConfig()
+                return
+            }
+
+            // Fall back to a session-only application if the configuration
+            // file cannot be written.
             guard let newConfig = configWithTheme(theme) else {
-                Ghostty.logger.warning("toggle_theme: failed to load theme \(theme, privacy: .public)")
+                Ghostty.logger.warning("apply_theme: failed to load theme \(theme, privacy: .public)")
                 return
             }
 
             ghostty_app_update_config(app, newConfig.config!)
-            themeCycleIndex = nextIndex
+        }
+
+        /// Write the given theme to the user's configuration file, replacing
+        /// any existing active `theme` setting.
+        private func persistTheme(_ theme: String) -> Bool {
+            let path = userConfigPath
+            guard !path.isEmpty else { return false }
+
+            let contents = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
+            let updated = Self.replacingTheme(in: contents, with: theme)
+            do {
+                try updated.write(toFile: path, atomically: true, encoding: .utf8)
+                return true
+            } catch {
+                Ghostty.logger.warning(
+                    "apply_theme: failed to write config error=\(error, privacy: .public)"
+                )
+                return false
+            }
+        }
+
+        /// Returns the theme from the last active `theme = ...` line.
+        private static func themeName(fromConfig contents: String) -> String? {
+            var result: String?
+            for line in contents.components(separatedBy: .newlines) {
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.hasPrefix("#"),
+                      let eq = trimmed.firstIndex(of: "=") else { continue }
+                let key = trimmed[..<eq].trimmingCharacters(in: .whitespacesAndNewlines)
+                guard key == "theme" else { continue }
+
+                var value = trimmed[trimmed.index(after: eq)...]
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if value.count >= 2, value.hasPrefix("\""), value.hasSuffix("\"") {
+                    value.removeFirst()
+                    value.removeLast()
+                }
+
+                // Light/dark conditional themes cannot be matched against the
+                // theme-cycle list, so ignore them.
+                guard !value.contains(":") && !value.contains(",") else { continue }
+                result = String(value)
+            }
+            return result
+        }
+
+        /// Returns the configuration contents with active `theme` lines
+        /// replaced by the given theme.
+        private static func replacingTheme(in contents: String, with theme: String) -> String {
+            let replacement = "theme = \"\(theme)\""
+            let lines = contents.components(separatedBy: "\n")
+            var result: [String] = []
+            result.reserveCapacity(lines.count + 1)
+            var replaced = false
+
+            for line in lines {
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.hasPrefix("#"),
+                   let eq = trimmed.firstIndex(of: "="),
+                   trimmed[..<eq].trimmingCharacters(in: .whitespacesAndNewlines) == "theme" {
+                    if !replaced {
+                        let indent = line.prefix { $0 == " " || $0 == "\t" }
+                        result.append(String(indent) + replacement)
+                        replaced = true
+                    }
+                    continue
+                }
+                result.append(line)
+            }
+
+            if !replaced {
+                if result.last == "" {
+                    result.insert(replacement, at: result.count - 1)
+                } else {
+                    result.append(replacement)
+                }
+            }
+
+            return result.joined(separator: "\n")
         }
 
         /// Returns a configuration that is identical to the user's
