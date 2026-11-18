@@ -89,18 +89,6 @@
     },
     {
       "source": "ghostty",
-      "sha": "7e4cc4fae011dc3a133ce625d6cf6f0d546be64a",
-      "topic": "tmux-control-mode",
-      "group": "tmux-control-mode",
-      "priority": "P1",
-      "revisit_trigger": "on_user_request",
-      "validation_plan": "Port the full tmux chain only if tmux control mode is requested; test against real tmux sessions",
-      "review_status": "candidate_next_batch",
-      "last_reassessed_at": "2026-11-17",
-      "notes": "The issue is reachable in Railty (tmux control mode is compiled in and enabled). On sync/ghostty-tmux-hardening, all existing notification IDs were adapted (a08a3f354) and the list-windows arena cleanup was ported; tmux tests and the macOS build (run 44136063086) passed; not merged."
-    },
-    {
-      "source": "ghostty",
       "sha": "2ddcda8e80fdf53d2a6fdee9d36f4986d858d477",
       "topic": "tmux-control-mode",
       "group": "tmux-control-mode",
@@ -134,18 +122,6 @@
       "review_status": "awaiting_dependencies",
       "last_reassessed_at": "2026-11-17",
       "notes": "Internal cleanup and test scaffolding; conflicts with Sidegeist-touched core files."
-    },
-    {
-      "source": "ghostty",
-      "sha": "51e7fe51db607773a651b161527beb10ce92a611",
-      "topic": "tmux-control-mode",
-      "group": "tmux-control-mode",
-      "priority": "P3",
-      "revisit_trigger": "on_user_request",
-      "validation_plan": "Port the full tmux chain only if tmux control mode is requested; test against real tmux sessions",
-      "review_status": "candidate_next_batch",
-      "last_reassessed_at": "2026-11-17",
-      "notes": "%output now parses bytes safely (d754c5520), preserving non-UTF-8 raw bytes and empty output; tests and the macOS build passed; not merged."
     },
     {
       "source": "ghostty",

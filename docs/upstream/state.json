@@ -4,11 +4,11 @@
   "updated_at": "2026-11-17",
   "last_full_sync_date": null,
   "railty": {
-    "head_sha": "6016fb005881905b3807af45b23ee778dd2122f5",
+    "head_sha": "4a61fda77",
     "latest_release_tag": "v0.1.4",
     "pinned_zig_version": "0.17.0",
-    "last_validated_commit": "6016fb005881905b3807af45b23ee778dd2122f5",
-    "last_validation_scope": "local Xcode 27.2: zig build test -Dtest-filter=PageList passed, ghostty-bench measured 1.65-1.71x for line-limited scrollback (RSS flat); xcode-27 arm64 build run 44075475339 validated the same PageList code; CI runs Python sync tests",
+    "last_validated_commit": "4a61fda77",
+    "last_validation_scope": "tmux unit tests passed; macOS arm64 build run 44136063086 succeeded; runtime smoke on the experimental build: tmux 3.8 control client attached (control=1), echo/split/non-UTF-8 output stable; CI runs the upstream sync Python tests",
     "sync_branch": null
   },
   "upstreams": {
@@ -51,37 +51,37 @@
     "file": "docs/upstream/ledger.jsonl",
     "total_entries": 395,
     "by_decision": {
-      "INCLUDE": 46,
-      "DEFER": 148,
+      "INCLUDE": 48,
+      "DEFER": 146,
       "SKIP": 201,
       "ALREADY_INCLUDED": 0,
       "NEEDS_REVIEW": 0
     },
     "by_integration": {
       "pending": 0,
-      "deferred": 148,
+      "deferred": 146,
       "not-applicable": 201,
       "integrated": 44,
-      "adapted": 2,
+      "adapted": 4,
       "rejected": 0
     }
   },
   "deferred_review": {
     "queue_file": "docs/upstream/defer-queue.json",
     "last_reviewed_at": "2026-11-17",
-    "total": 148,
+    "total": 146,
     "by_priority": {
       "P2": 40,
-      "P3": 103,
-      "P1": 5
+      "P3": 102,
+      "P1": 4
     },
     "by_status": {
       "awaiting_toolchain": 4,
       "awaiting_upstream": 75,
       "awaiting_validation": 20,
-      "candidate_next_batch": 3,
       "awaiting_dependencies": 45,
-      "no_runtime_path": 1
+      "no_runtime_path": 1,
+      "candidate_next_batch": 1
     },
     "satisfied_triggers": 0,
     "report": "docs/upstream/reviews/2026-11-17-deferred-review.md",
@@ -105,9 +105,9 @@
       "branch": "sync/ghostty-tmux-hardening",
       "head_commit": "1eca92330ea51f0c8778bfad55ec603f13e877f7",
       "commits": [
-        "a08a3f354",
-        "d754c5520",
-        "1eca92330"
+        "c6ba91955",
+        "5b68f2b74",
+        "4a61fda77"
       ],
       "upstream_shas": [
         "7e4cc4fae011dc3a133ce625d6cf6f0d546be64a",
@@ -116,16 +116,16 @@
       "ci_run": 44136063086,
       "ci_result": "success",
       "validation": "tmux unit tests passed, macOS arm64 build passed, runtime NOT_TESTED",
-      "merged": false
+      "merged": true,
+      "runtime_smoke": "passed (tmux 3.8 control=1; echo/split/non-UTF-8 output stable)"
     }
   },
   "active_task": {
     "status": "completed",
     "branch": "main",
-    "description": "Upstream Sync v1.3: tmux oversized-id/arena-leak and %output byte-safety fixes adapted and validated on sync/ghostty-tmux-hardening; DEFER priorities corrected (P1 5). Awaiting integration decision.",
-    "next_recommended_branch": "sync/ghostty-tmux-hardening",
+    "description": "Upstream Sync v1.3 complete: tmux oversized-id/arena-leak and %output byte-safety fixes merged into main after unit, macOS build, and runtime smoke validation. No release was created.",
+    "next_recommended_branch": null,
     "remaining_priority_groups": [
-      "tmux hardening integration decision",
       "macos-c-api-nullability (on demand)"
     ]
   },

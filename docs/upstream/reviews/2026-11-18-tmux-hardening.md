@@ -45,11 +45,13 @@ Commits:
 | New: `%output` invalid UTF-8 / empty data / oversized id / malformed lines | passed |
 | New: partial `list-windows` failure frees parsed layouts (testing allocator leak check) | passed |
 | macOS arm64 build, run `44136063086` | success (workflow_dispatch, no Release/Cask changes) |
-| Runtime tmux session smoke | `NOT_TESTED` |
+| Runtime smoke (experimental build) | passed: tmux 3.8 client `control=1`; echo, split-window, and non-UTF-8 pane output all stable, app stayed alive |
+
+Runtime smoke notes: the app was launched with `-e tmux -CC` from the downloaded arm64 artifact; `tmux list-clients` reported `control=1`, AppleScript reported one window/tab named `tmux`, and `echo RUNTIME_OK`, `split-window`, and `printf '\377\376\n'` did not terminate the app or disconnect the control client. The macOS app still leaves `Viewer.Action.windows` unimplemented (TODO in `stream_handler.zig`), so tmux windows do not become Railty tabs; this test covers the parser/command path, not multi-window UI.
 
 ## 5. Integration status
 
-**Not merged.** Branch `sync/ghostty-tmux-hardening`, head `1eca92330`. Ledger keeps both upstream commits `DEFER` with experiment notes; queue status is `candidate_next_batch`. No Sidegeist conflict was found.
+**Merged into `main`** as `c6ba91955` (oversized-id hardening + list-windows arena cleanup), `5b68f2b74` (`%output` byte-safe parsing), and `4a61fda77` (list-windows leak regression test). Branch `sync/ghostty-tmux-hardening` was the validation branch and is deleted after merge. No Sidegeist conflict was found. No release was created.
 
 ## 6. DEFER priority corrections
 
@@ -62,12 +64,11 @@ Kept the ledger `category` untouched; only queue execution priority changed:
 | `9b848b0f5c` (snapshot capacity) | P1 | P2 | No macOS snapshot consumer; no runtime path. |
 | `0e067ded70` (nullability) | P1 | P1 | Kept as the one non-tmux item worth watching; not executed this round. |
 
-Queue now: `P1 5 / P2 40 / P3 103`; statuses `candidate_next_batch 3` (CR pin, tmux id fix, `%output`), `awaiting_validation 20`, others unchanged.
+Queue now: `P1 4 / P2 40 / P3 102` (146 entries; the two tmux entries moved to `INCLUDE`), statuses `candidate_next_batch 1` (CR pin), `awaiting_validation 20`, others unchanged.
 
 The only new upstream commit since the last review is `b634352b7` (VOUCHED list update, docs/CI) — no security or stability impact.
 
 ## 7. Remaining DEFER items worth active attention
 
-1. **tmux hardening integration decision** — validated on the branch, pending review.
-2. **macOS C API nullability `0e067ded70`** — source-breaking; only with a dedicated Swift pass or a Sidegeist core upgrade.
-3. **tmux feature chain `7e7968826f`, `c2d93620ef`, `9a92081882`** — only if fuller tmux control-mode behavior is wanted; not needed for the hardening above.
+1. **macOS C API nullability `0e067ded70`** — source-breaking; only with a dedicated Swift pass or a Sidegeist core upgrade.
+2. **tmux feature chain `7e7968826f`, `c2d93620ef`, `9a92081882`** — only if fuller tmux control-mode behavior (e.g. tmux windows as tabs) is wanted; not needed for the hardening above.
