@@ -601,18 +601,25 @@ language: ?[:0]const u8 = null,
 theme: ?Theme = null,
 
 /// A comma-separated list of themes to cycle through using the
-/// `toggle_theme` keybinding action. For example:
+/// `toggle_theme` keybinding action. Themes are cycled in the order
+/// listed and wrap around at the end.
 ///
-///     theme-cycle = Catppuccin Mocha, TokyoNight Storm, Dracula
+/// Railty defaults to an alternating dark/light selection of popular
+/// bundled themes:
+///
+///     Catppuccin Mocha, Catppuccin Latte, TokyoNight Storm,
+///     TokyoNight Day, Rose Pine, Rose Pine Dawn, Gruvbox Dark,
+///     Gruvbox Light, Nord, Nord Light, Everforest Dark Med,
+///     Everforest Light Med, Kanagawa Wave, Kanagawa Lotus,
+///     GitHub Dark Default, GitHub Light Default
 ///
 /// Each entry must be the name of a theme available to Railty, either
 /// bundled with Railty or placed in your themes configuration directory.
-/// Pressing the `toggle_theme` action switches to the next theme in the
-/// list, wrapping around at the end.
+/// Set this to an empty value to disable theme cycling.
 ///
 /// Switching themes this way only affects the current session. Your
 /// configuration file is never modified.
-@"theme-cycle": ?[:0]const u8 = null,
+@"theme-cycle": ?[:0]const u8 = "Catppuccin Mocha, Catppuccin Latte, TokyoNight Storm, TokyoNight Day, Rose Pine, Rose Pine Dawn, Gruvbox Dark, Gruvbox Light, Nord, Nord Light, Everforest Dark Med, Everforest Light Med, Kanagawa Wave, Kanagawa Lotus, GitHub Dark Default, GitHub Light Default",
 
 /// Background color for the window.
 /// Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color.
