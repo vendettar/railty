@@ -29,6 +29,11 @@ extension Ghostty {
 
         /// Preferred config file than the default ones
         private var configPath: String?
+
+        /// The index of the theme currently applied by the `toggle_theme`
+        /// action within the `theme-cycle` configuration list. This is
+        /// session-only state and is reset when the configuration is reloaded.
+        private var themeCycleIndex: Int?
         /// The ghostty app instance. We only have one of these for the entire app, although I guess
         /// in theory you can have multiple... I don't know why you would...
         @Published var app: ghostty_app_t? {
@@ -159,6 +164,7 @@ extension Ghostty {
 
             ghostty_app_update_config(app, newConfig.config!)
             /// applied config will be updated in ``Self.configChange(_:target:v:)``
+            themeCycleIndex = nil
         }
 
         func reloadConfig(surface: ghostty_surface_t, soft: Bool = false) {
@@ -178,6 +184,66 @@ extension Ghostty {
             }
 
             ghostty_surface_update_config(surface, newConfig.config!)
+        }
+
+        /// Cycle to the next theme in the `theme-cycle` configuration.
+        func toggleTheme() {
+            guard let app = self.app else { return }
+
+            let themes = config.themeCycle
+            guard !themes.isEmpty else {
+                Ghostty.logger.warning("toggle_theme: theme-cycle is not configured")
+                return
+            }
+
+            let nextIndex = themeCycleIndex.map { ($0 + 1) % themes.count } ?? 0
+            let theme = themes[nextIndex]
+            guard let newConfig = configWithTheme(theme) else {
+                Ghostty.logger.warning("toggle_theme: failed to load theme \(theme, privacy: .public)")
+                return
+            }
+
+            ghostty_app_update_config(app, newConfig.config!)
+            themeCycleIndex = nextIndex
+        }
+
+        /// Returns a configuration that is identical to the user's
+        /// configuration but with the given theme applied.
+        ///
+        /// The theme is applied by writing a temporary configuration file
+        /// next to the user's configuration file and loading it. Keeping the
+        /// temporary file in the same directory preserves relative
+        /// `config-file` includes. The user's configuration file is never
+        /// modified.
+        private func configWithTheme(_ theme: String) -> Config? {
+            let path = configPath ?? Ghostty.AllocatedString(ghostty_config_open_path()).string
+            guard !path.isEmpty else {
+                Ghostty.logger.warning("toggle_theme: unable to determine config path")
+                return nil
+            }
+
+            let baseURL = URL(fileURLWithPath: path)
+            var contents = (try? String(contentsOf: baseURL, encoding: .utf8)) ?? ""
+            if !contents.isEmpty && !contents.hasSuffix("\n") {
+                contents += "\n"
+            }
+            contents += "theme = \(theme)\n"
+
+            let tempURL = baseURL.deletingLastPathComponent()
+                .appendingPathComponent(".railty-theme-cycle.ghostty")
+            do {
+                try contents.write(to: tempURL, atomically: true, encoding: .utf8)
+            } catch {
+                Ghostty.logger.warning(
+                    "toggle_theme: failed to write temporary config error=\(error, privacy: .public)"
+                )
+                return nil
+            }
+            defer { try? FileManager.default.removeItem(at: tempURL) }
+
+            let newConfig = Config(at: tempURL.path)
+            guard newConfig.loaded else { return nil }
+            return newConfig
         }
 
         /// Request that the given surface is closed. This will trigger the full normal surface close event
@@ -781,6 +847,9 @@ extension Ghostty {
 
             case GHOSTTY_ACTION_COPY_TITLE_TO_CLIPBOARD:
                 return copyTitleToClipboard(app, target: target)
+
+            case GHOSTTY_ACTION_TOGGLE_THEME:
+                toggleTheme(app, target: target)
 
             default:
                 Ghostty.logger.warning("unknown action action=\(action.tag.rawValue, privacy: .public)")
@@ -2425,6 +2494,13 @@ extension Ghostty {
             default:
                 assertionFailure()
             }
+        }
+
+        private static func toggleTheme(_ app: ghostty_app_t, target: ghostty_target_s) {
+            guard target.tag == GHOSTTY_TARGET_APP else { return }
+            guard let app_ud = ghostty_app_userdata(app) else { return }
+            let ghostty = Unmanaged<App>.fromOpaque(app_ud).takeUnretainedValue()
+            ghostty.toggleTheme()
         }
 
         private static func configChange(

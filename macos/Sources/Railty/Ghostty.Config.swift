@@ -758,6 +758,19 @@ extension Ghostty {
             return buffer.map { Ghostty.Command(cValue: $0) }
         }
 
+        /// The list of themes to cycle through with the `toggle_theme` action.
+        var themeCycle: [String] {
+            guard let config = self.config else { return [] }
+            var v: UnsafePointer<Int8>?
+            let key = "theme-cycle"
+            guard ghostty_config_get(config, &v, key, UInt(key.lengthOfBytes(using: .utf8))) else { return [] }
+            guard let ptr = v else { return [] }
+            return String(cString: ptr)
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+        }
+
         var progressStyle: Bool {
             guard let config = self.config else { return true }
             var v = true
