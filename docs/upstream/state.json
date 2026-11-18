@@ -16,17 +16,17 @@
       "remote": "ghostty",
       "url": "https://github.com/ghostty-org/ghostty.git",
       "branch": "main",
-      "remote_head_sha": "5ebe501a63425b13d9952e8c54682c046386e5af",
+      "remote_head_sha": "f3e1f65bb602ac3d441ffdd5f9645bef66a39648",
       "latest_release_tag": "v1.4.0",
       "latest_release_sha": "83fb95624b0439ee660c2679b43b38c8b63769cd",
       "last_integrated_sha": "83fb95624b0439ee660c2679b43b38c8b63769cd",
-      "last_reviewed_sha": "5ebe501a63425b13d9952e8c54682c046386e5af",
+      "last_reviewed_sha": "f3e1f65bb602ac3d441ffdd5f9645bef66a39648",
       "reviewed_range": {
         "base_sha": "83fb95624b0439ee660c2679b43b38c8b63769cd",
-        "head_sha": "5ebe501a63425b13d9952e8c54682c046386e5af",
-        "total_commits": 395,
-        "non_merge_commits": 267,
-        "merge_commits": 128
+        "head_sha": "f3e1f65bb602ac3d441ffdd5f9645bef66a39648",
+        "total_commits": 401,
+        "non_merge_commits": 271,
+        "merge_commits": 130
       }
     },
     "sidegeist": {
@@ -49,18 +49,18 @@
   },
   "ledger_summary": {
     "file": "docs/upstream/ledger.jsonl",
-    "total_entries": 395,
+    "total_entries": 401,
     "by_decision": {
       "INCLUDE": 48,
       "DEFER": 146,
-      "SKIP": 201,
+      "SKIP": 207,
       "ALREADY_INCLUDED": 0,
       "NEEDS_REVIEW": 0
     },
     "by_integration": {
       "pending": 0,
       "deferred": 146,
-      "not-applicable": 201,
+      "not-applicable": 207,
       "integrated": 44,
       "adapted": 4,
       "rejected": 0
