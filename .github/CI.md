@@ -2,13 +2,13 @@
 
 ## Workflow Boundaries (Railty vs. Upstream Ghostty)
 
-Railty maintains two dedicated workflows while preserving all 15 upstream Ghostty workflows untouched in `.github/workflows/` and disabled at the GitHub repository level (`disabled_manually`):
+Railty maintains two dedicated workflows while keeping the remaining upstream Ghostty workflows untouched in `.github/workflows/` and disabled at the GitHub repository level (`disabled_manually`):
 
 - **Railty workflows (active)**:
   - `.github/workflows/ci-railty.yml`: Lightweight daily CI on `ubuntu-latest` for `push` / `pull_request` to `main`.
   - `.github/workflows/release-railty.yml`: Apple Silicon (`arm64`) macOS release build, artifact packaging, GitHub Release publishing, and Homebrew Tap update.
 - **Upstream Ghostty workflows (disabled in GitHub Actions, files kept unmodified)**:
-  - `test.yml`, `release-tag.yml`, `release-tip.yml`, `publish-tag.yml`, `nix.yml`, `flatpak.yml`, `snap.yml`, `clean-artifacts.yml`, `milestone.yml`, `update-colorschemes.yml`, `vouch-check-issue.yml`, `vouch-check-pr.yml`, `vouch-manage-by-discussion.yml`, `vouch-manage-by-issue.yml`, `vouch-sync-codeowners.yml`.
+  - `test.yml`, `publish-tag.yml`, `nix.yml`, `flatpak.yml`, `snap.yml`, `clean-artifacts.yml`, `milestone.yml`, `update-colorschemes.yml`, `vouch-check-issue.yml`, `vouch-check-pr.yml`, `vouch-manage-by-discussion.yml`, `vouch-manage-by-issue.yml`, `vouch-sync-codeowners.yml`.
   - Keeping these files unmodified prevents merge conflicts when pulling from upstream Ghostty / Sidegeist while ensuring they never consume runners or attempt upstream R2/Sentry/nightly publishes.
 
 ## Daily Development (`ci-railty.yml`)
