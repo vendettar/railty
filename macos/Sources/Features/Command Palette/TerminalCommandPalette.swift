@@ -30,6 +30,14 @@ struct TerminalCommandPaletteView: View {
     /// The callback when an action is submitted.
     var onAction: ((String) -> Void)
 
+    /// The current level of the palette.
+    @State private var mode: PaletteMode = .commands
+
+    private enum PaletteMode: Hashable {
+        case commands
+        case themes
+    }
+
     var body: some View {
         ZStack {
             if isPresented {
@@ -40,12 +48,28 @@ struct TerminalCommandPaletteView: View {
                         ResponderChainInjector(responder: surfaceView)
                             .frame(width: 0, height: 0)
 
-                        CommandPaletteView(
-                            isPresented: $isPresented,
-                            backgroundColor: ghosttyConfig.backgroundColor,
-                            options: commandOptions,
-                            dynamicOptions: themeOptions(for:)
-                        )
+                        Group {
+                            switch mode {
+                            case .commands:
+                                CommandPaletteView(
+                                    isPresented: $isPresented,
+                                    backgroundColor: ghosttyConfig.backgroundColor,
+                                    options: commandOptions
+                                )
+                                .id(PaletteMode.commands)
+
+                            case .themes:
+                                CommandPaletteView(
+                                    isPresented: $isPresented,
+                                    backgroundColor: ghosttyConfig.backgroundColor,
+                                    options: [],
+                                    dynamicOptions: themeOptions(for:),
+                                    onExit: { mode = .commands },
+                                    placeholder: "Search themes…"
+                                )
+                                .id(PaletteMode.themes)
+                            }
+                        }
                         .zIndex(1) // Ensure it's on top
 
                         Spacer()
@@ -59,6 +83,8 @@ struct TerminalCommandPaletteView: View {
             // surface view we were overlaid on top of. There's probably a better way
             // to handle the first responder state here but I don't know it.
             if !newValue {
+                mode = .commands
+
                 // Has to be on queue because onChange happens on a user-interactive
                 // thread and Xcode is mad about this call on that.
                 DispatchQueue.main.async {
@@ -73,7 +99,19 @@ struct TerminalCommandPaletteView: View {
         // Sort the terminal options. We replace ":" with a character that sorts before space
         // so that "Foo:" sorts before "Foo Bar:". Use sortKey as a tie-breaker
         // for stable ordering when titles are equal.
-        sortedTerminalPaletteOptions(jumpOptions + terminalOptions)
+        [chooseThemeOption] + sortedTerminalPaletteOptions(jumpOptions + terminalOptions)
+    }
+
+    /// The entry point to the second-level theme picker.
+    private var chooseThemeOption: CommandOption {
+        CommandOption(
+            title: "Choose Theme…",
+            description: "Search and apply a color theme.",
+            leadingIcon: "paintpalette",
+            dismisses: false
+        ) {
+            mode = .themes
+        }
     }
 
     /// Custom commands from the command-palette-entry configuration.

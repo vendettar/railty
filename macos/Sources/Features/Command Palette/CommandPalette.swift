@@ -19,6 +19,8 @@ struct CommandOption: Identifiable, Hashable {
     let badge: String?
     /// Whether to visually emphasize this option.
     let emphasis: Bool
+    /// Whether selecting this option dismisses the palette.
+    let dismisses: Bool
     /// Sort key for stable ordering when titles are equal.
     let sortKey: ObjectIdentifier?
     /// The action to perform when this option is selected.
@@ -33,6 +35,7 @@ struct CommandOption: Identifiable, Hashable {
         leadingColor: Color? = nil,
         badge: String? = nil,
         emphasis: Bool = false,
+        dismisses: Bool = true,
         sortKey: ObjectIdentifier? = nil,
         action: @escaping () -> Void
     ) {
@@ -44,6 +47,7 @@ struct CommandOption: Identifiable, Hashable {
         self.leadingColor = leadingColor
         self.badge = badge
         self.emphasis = emphasis
+        self.dismisses = dismisses
         self.sortKey = sortKey
         self.action = action
     }
@@ -65,6 +69,13 @@ struct CommandPaletteView: View {
     /// Options that depend on the current query, appended after the filtered
     /// static options. Used for lazily searched content such as themes.
     var dynamicOptions: ((String) -> [CommandOption])?
+
+    /// Called when the palette is dismissed via Escape. If nil, the palette
+    /// closes.
+    var onExit: (() -> Void)?
+
+    /// Placeholder text shown in the search field.
+    var placeholder: String = "Execute a command…"
 
     @State private var rawQuery = ""
     @State private var selectedIndex: UInt?
@@ -109,14 +120,22 @@ struct CommandPaletteView: View {
         }
 
         VStack(alignment: .leading, spacing: 0) {
-            CommandPaletteQuery(query: $rawQuery) { event in
+            CommandPaletteQuery(query: $rawQuery, placeholder: placeholder) { event in
                 switch event {
                 case .exit:
-                    isPresented = false
+                    if let onExit {
+                        onExit()
+                    } else {
+                        isPresented = false
+                    }
 
                 case .submit:
-                    isPresented = false
-                    selectedOption?.action()
+                    if let option = selectedOption, !option.dismisses {
+                        option.action()
+                    } else {
+                        isPresented = false
+                        selectedOption?.action()
+                    }
 
                 case .move(.up):
                     if filteredOptions.isEmpty { break }
@@ -159,7 +178,9 @@ struct CommandPaletteView: View {
                 query: query,
                 selectedIndex: $selectedIndex,
                 hoveredOptionID: $hoveredOptionID) { option in
-                    isPresented = false
+                    if option.dismisses {
+                        isPresented = false
+                    }
                     option.action()
                 }
         }
@@ -197,11 +218,17 @@ struct CommandPaletteView: View {
 /// The text field for building the query for the command palette.
 private struct CommandPaletteQuery: View {
     @Binding var query: String
+    var placeholder: String = "Execute a command…"
     var onEvent: ((KeyboardEvent) -> Void)?
     @FocusState private var isTextFieldFocused: Bool
 
-    init(query: Binding<String>, onEvent: ((KeyboardEvent) -> Void)? = nil) {
+    init(
+        query: Binding<String>,
+        placeholder: String = "Execute a command…",
+        onEvent: ((KeyboardEvent) -> Void)? = nil
+    ) {
         _query = query
+        self.placeholder = placeholder
         self.onEvent = onEvent
     }
 
@@ -231,7 +258,7 @@ private struct CommandPaletteQuery: View {
             .frame(width: 0, height: 0)
             .accessibilityHidden(true)
 
-            TextField("Execute a command…", text: $query)
+            TextField(placeholder, text: $query)
                 .padding()
                 .font(.system(size: 20, weight: .light))
                 .frame(height: 48)
