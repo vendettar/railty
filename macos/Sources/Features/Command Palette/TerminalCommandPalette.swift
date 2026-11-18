@@ -43,7 +43,8 @@ struct TerminalCommandPaletteView: View {
                         CommandPaletteView(
                             isPresented: $isPresented,
                             backgroundColor: ghosttyConfig.backgroundColor,
-                            options: commandOptions
+                            options: commandOptions,
+                            dynamicOptions: themeOptions(for:)
                         )
                         .zIndex(1) // Ensure it's on top
 
@@ -90,6 +91,64 @@ struct TerminalCommandPaletteView: View {
                     onAction(c.action)
                 }
             }
+    }
+
+    /// The Ghostty app used to apply and persist theme changes.
+    private var ghostty: Ghostty.App? {
+        (NSApp.delegate as? AppDelegate)?.ghostty
+    }
+
+    /// Theme options for the current query. An empty query shows the curated
+    /// `theme-cycle` list; any other query searches all available themes.
+    private func themeOptions(for query: String) -> [CommandOption] {
+        guard let ghostty else { return [] }
+        let current = ghostty.currentThemeName
+
+        if query.isEmpty {
+            var names = ghostty.config.themeCycle
+            if let current {
+                names.removeAll { $0 == current }
+                names.insert(current, at: 0)
+            }
+
+            return names.map { name in
+                let theme = GhosttyThemes.all.first { $0.name == name }
+                    ?? GhosttyTheme(name: name, background: nil)
+                return themeOption(theme, current: current, ghostty: ghostty)
+            }
+        }
+
+        return searchThemes(query)
+            .prefix(40)
+            .map { themeOption($0, current: current, ghostty: ghostty) }
+    }
+
+    /// Searches all themes for the query, ranking prefix matches first.
+    private func searchThemes(_ query: String) -> [GhosttyTheme] {
+        let lower = query.lowercased()
+        return GhosttyThemes.all
+            .filter { $0.name.lowercased().contains(lower) }
+            .sorted { lhs, rhs in
+                let lhsPrefix = lhs.name.lowercased().hasPrefix(lower)
+                let rhsPrefix = rhs.name.lowercased().hasPrefix(lower)
+                if lhsPrefix != rhsPrefix { return lhsPrefix }
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+    }
+
+    private func themeOption(
+        _ theme: GhosttyTheme,
+        current: String?,
+        ghostty: Ghostty.App
+    ) -> CommandOption {
+        CommandOption(
+            title: "Theme: \(theme.name)",
+            subtitle: theme.subtitle,
+            leadingColor: theme.previewColor,
+            badge: theme.name == current ? "Current" : nil
+        ) {
+            ghostty.applyTheme(theme.name)
+        }
     }
 
     /// Commands for jumping to other terminal surfaces.

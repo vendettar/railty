@@ -61,6 +61,11 @@ struct CommandPaletteView: View {
     @Binding var isPresented: Bool
     var backgroundColor: Color = Color(nsColor: .windowBackgroundColor)
     var options: [CommandOption]
+
+    /// Options that depend on the current query, appended after the filtered
+    /// static options. Used for lazily searched content such as themes.
+    var dynamicOptions: ((String) -> [CommandOption])?
+
     @State private var rawQuery = ""
     @State private var selectedIndex: UInt?
     @State private var hoveredOptionID: UUID?
@@ -73,11 +78,18 @@ struct CommandPaletteView: View {
     // the query. Matched options are ranked in the following order:
     // leadingColor > title > subtitle > description.
     var filteredOptions: [CommandOption] {
-        if query.isEmpty {
-            return options
+        let base = if query.isEmpty {
+            options
         } else {
-            return options.filteredAndSorted(query: query)
+            options.filteredAndSorted(query: query)
         }
+
+        guard let dynamicOptions else { return base }
+        let dynamic = dynamicOptions(query)
+
+        // With no query, surface the curated dynamic options first so they
+        // are visible without scrolling.
+        return query.isEmpty ? dynamic + base : base + dynamic
     }
 
     var selectedOption: CommandOption? {
