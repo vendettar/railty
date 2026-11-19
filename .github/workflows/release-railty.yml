@@ -316,6 +316,14 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(git rev-list --count HEAD)" "$INFO"
           /usr/libexec/PlistBuddy -c "Set :GhosttyCommit $(git rev-parse --short HEAD)" "$INFO"
 
+      - name: Bundle license notices
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="macos/build/Release/Railty.app"
+          cp LICENSE "$APP/Contents/Resources/LICENSE"
+          cp THIRD_PARTY_LICENSES "$APP/Contents/Resources/THIRD_PARTY_LICENSES"
+
       - name: Optional Developer ID signing
         env:
           RAILTY_SIGNING_IDENTITY: ${{ secrets.RAILTY_SIGNING_IDENTITY }}

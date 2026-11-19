@@ -89,14 +89,15 @@ printf 'Verified code signature on %s\n' "$APP_PATH"
 
 rm -f "$OUTPUT_ZIP" "$OUTPUT_ZIP.sha256"
 
-# MIT compliance: ship the upstream copyright and permission notice with
-# every binary copy. Stage the app plus LICENSE so the signed bundle is not
-# modified after codesign verification.
+# MIT compliance: ship the upstream copyright and permission notices with
+# every binary copy. Stage the app plus LICENSE and THIRD_PARTY_LICENSES so
+# the signed bundle is not modified after codesign verification.
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 STAGING_DIR="$(mktemp -d)"
 trap 'rm -rf "$STAGING_DIR"' EXIT
 /usr/bin/ditto "$APP_PATH" "$STAGING_DIR/Railty.app"
 /usr/bin/ditto "$REPO_ROOT/LICENSE" "$STAGING_DIR/LICENSE"
+/usr/bin/ditto "$REPO_ROOT/THIRD_PARTY_LICENSES" "$STAGING_DIR/THIRD_PARTY_LICENSES"
 
 /usr/bin/ditto -c -k --sequesterRsrc "$STAGING_DIR" "$OUTPUT_ZIP"
 SHA256="$(/usr/bin/shasum -a 256 "$OUTPUT_ZIP" | /usr/bin/awk '{print $1}')"

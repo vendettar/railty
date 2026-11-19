@@ -112,3 +112,5 @@ For terminal configuration reference, see the [upstream Ghostty documentation](h
 ## License
 
 Railty is distributed under the MIT License. See [LICENSE](LICENSE) for the full text and preserved copyright notice for Mitchell Hashimoto and Ghostty contributors.
+
+Bundled color themes come from [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes), which is MIT-licensed; individual themes remain the copyright of their authors. See [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES) for the full notice.
