@@ -157,6 +157,7 @@ extension Ghostty {
                 return
             }
 
+            themeNameCacheValid = false
             ghostty_app_update_config(app, newConfig.config!)
             /// applied config will be updated in ``Self.configChange(_:target:v:)``
         }
@@ -187,10 +188,21 @@ extension Ghostty {
 
         /// The theme currently set in the user's configuration file, if any.
         var currentThemeName: String? {
-            guard let contents = try? String(contentsOfFile: userConfigPath, encoding: .utf8) else {
-                return nil
+            if !themeNameCacheValid {
+                let contents = try? String(contentsOfFile: userConfigPath, encoding: .utf8)
+                themeNameCache = contents.flatMap(Self.themeName(fromConfig:))
+                themeNameCacheValid = true
             }
-            return Self.themeName(fromConfig: contents)
+            return themeNameCache
+        }
+
+        /// Cached theme name parsed from the user's configuration file.
+        private var themeNameCache: String?
+        private var themeNameCacheValid = false
+
+        private func setCurrentThemeName(_ theme: String) {
+            themeNameCache = theme
+            themeNameCacheValid = true
         }
 
         /// Cycle to the next theme in the `theme-cycle` configuration and
@@ -212,35 +224,80 @@ extension Ghostty {
         func applyTheme(_ theme: String) {
             guard let app = self.app else { return }
 
-            if persistTheme(theme) {
+            if persistConfigValue(key: "theme", value: "\"\(theme)\"") {
                 reloadConfig()
                 return
             }
 
             // Fall back to a session-only application if the configuration
             // file cannot be written.
-            guard let newConfig = configWithTheme(theme) else {
+            guard let newConfig = configWithTheme(theme),
+                  let configPtr = newConfig.config else {
                 Ghostty.logger.warning("apply_theme: failed to load theme \(theme, privacy: .public)")
                 return
             }
 
-            ghostty_app_update_config(app, newConfig.config!)
+            setCurrentThemeName(theme)
+            ghostty_app_update_config(app, configPtr)
         }
 
-        /// Write the given theme to the user's configuration file, replacing
-        /// any existing active `theme` setting.
-        private func persistTheme(_ theme: String) -> Bool {
+        /// Set the application background opacity and persist it.
+        func setBackgroundOpacity(_ opacity: Double) {
+            let clamped = min(max(opacity, 0), 1)
+            let value = String(format: "%.2f", clamped)
+            guard persistConfigValue(key: "background-opacity", value: value) else {
+                Ghostty.logger.warning("background-opacity: failed to persist")
+                return
+            }
+            reloadConfig()
+        }
+
+        /// Enable or disable the acrylic window blur and persist it.
+        func setBackgroundBlurEnabled(_ enabled: Bool) {
+            let value: String
+            if enabled {
+                let radius = config.backgroundBlur.radius ?? lastBlurRadius
+                lastBlurRadius = radius
+                value = String(radius)
+            } else {
+                if let radius = config.backgroundBlur.radius, radius > 0 {
+                    lastBlurRadius = radius
+                }
+                value = "false"
+            }
+
+            guard persistConfigValue(key: "background-blur", value: value) else {
+                Ghostty.logger.warning("background-blur: failed to persist")
+                return
+            }
+            reloadConfig()
+        }
+
+        /// The most recent non-zero blur radius, remembered across sessions.
+        private var lastBlurRadius: Int {
+            get {
+                let value = UserDefaults.standard.integer(forKey: "RailtyLastBlurRadius")
+                return value > 0 ? value : 20
+            }
+            set {
+                UserDefaults.standard.set(newValue, forKey: "RailtyLastBlurRadius")
+            }
+        }
+
+        /// Write a configuration value to the user's config file, replacing
+        /// any existing active setting with the same key.
+        private func persistConfigValue(key: String, value: String) -> Bool {
             let path = userConfigPath
             guard !path.isEmpty else { return false }
 
             let contents = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
-            let updated = Self.replacingTheme(in: contents, with: theme)
+            let updated = Self.replacingConfigValue(in: contents, key: key, value: value)
             do {
                 try updated.write(toFile: path, atomically: true, encoding: .utf8)
                 return true
             } catch {
                 Ghostty.logger.warning(
-                    "apply_theme: failed to write config error=\(error, privacy: .public)"
+                    "config: failed to write \(key, privacy: .public) error=\(error, privacy: .public)"
                 )
                 return false
             }
@@ -271,10 +328,14 @@ extension Ghostty {
             return result
         }
 
-        /// Returns the configuration contents with active `theme` lines
-        /// replaced by the given theme.
-        private static func replacingTheme(in contents: String, with theme: String) -> String {
-            let replacement = "theme = \"\(theme)\""
+        /// Returns the configuration contents with active settings for the
+        /// given key replaced by the given value.
+        private static func replacingConfigValue(
+            in contents: String,
+            key: String,
+            value: String
+        ) -> String {
+            let replacement = "\(key) = \(value)"
             let lines = contents.components(separatedBy: "\n")
             var result: [String] = []
             result.reserveCapacity(lines.count + 1)
@@ -284,7 +345,7 @@ extension Ghostty {
                 let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.hasPrefix("#"),
                    let eq = trimmed.firstIndex(of: "="),
-                   trimmed[..<eq].trimmingCharacters(in: .whitespacesAndNewlines) == "theme" {
+                   trimmed[..<eq].trimmingCharacters(in: .whitespacesAndNewlines) == key {
                     if !replaced {
                         let indent = line.prefix { $0 == " " || $0 == "\t" }
                         result.append(String(indent) + replacement)

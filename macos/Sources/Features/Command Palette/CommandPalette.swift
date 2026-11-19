@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CommandOption: Identifiable, Hashable {
     /// Unique identifier for this option.
-    let id = UUID()
+    let id: String
     /// The primary text displayed for this command.
     let title: String
     /// Secondary text displayed below the title.
@@ -15,6 +15,8 @@ struct CommandOption: Identifiable, Hashable {
     let leadingIcon: String?
     /// Color for the leading indicator circle.
     let leadingColor: Color?
+    /// Two-tone preview block for theme rows.
+    let preview: ThemePreview?
     /// Badge text displayed as a pill.
     let badge: String?
     /// Whether to visually emphasize this option.
@@ -33,18 +35,22 @@ struct CommandOption: Identifiable, Hashable {
         symbols: [String]? = nil,
         leadingIcon: String? = nil,
         leadingColor: Color? = nil,
+        preview: ThemePreview? = nil,
         badge: String? = nil,
         emphasis: Bool = false,
         dismisses: Bool = true,
+        id: String? = nil,
         sortKey: ObjectIdentifier? = nil,
         action: @escaping () -> Void
     ) {
+        self.id = id ?? UUID().uuidString
         self.title = title
         self.subtitle = subtitle
         self.description = description
         self.symbols = symbols
         self.leadingIcon = leadingIcon
         self.leadingColor = leadingColor
+        self.preview = preview
         self.badge = badge
         self.emphasis = emphasis
         self.dismisses = dismisses
@@ -77,9 +83,20 @@ struct CommandPaletteView: View {
     /// Placeholder text shown in the search field.
     var placeholder: String = "Execute a command…"
 
+    /// Maximum height of the results list.
+    var maxHeight: CGFloat = 200
+
+    /// Whether losing text field focus dismisses the palette. Disable this
+    /// when the palette contains focusable controls of its own.
+    var exitsOnFocusLoss: Bool = true
+
+    /// Optional controls rendered below the results list.
+    var footer: AnyView?
+
     @State private var rawQuery = ""
+    @State private var dynamicCache: [CommandOption] = []
     @State private var selectedIndex: UInt?
-    @State private var hoveredOptionID: UUID?
+    @State private var hoveredOptionID: String?
 
     var query: String {
         rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -95,12 +112,11 @@ struct CommandPaletteView: View {
             options.filteredAndSorted(query: query)
         }
 
-        guard let dynamicOptions else { return base }
-        let dynamic = dynamicOptions(query)
+        guard dynamicOptions != nil else { return base }
 
         // With no query, surface the curated dynamic options first so they
         // are visible without scrolling.
-        return query.isEmpty ? dynamic + base : base + dynamic
+        return query.isEmpty ? dynamicCache + base : base + dynamicCache
     }
 
     var selectedOption: CommandOption? {
@@ -112,6 +128,13 @@ struct CommandPaletteView: View {
         }
     }
 
+    /// Recomputes query-dependent options. This only happens when the query
+    /// changes so keyboard navigation doesn't rebuild the list.
+    private func refreshDynamicOptions() {
+        guard let dynamicOptions else { return }
+        dynamicCache = dynamicOptions(query)
+    }
+
     var body: some View {
         let scheme: ColorScheme = if NSColor(backgroundColor).isLightColor {
             .light
@@ -120,7 +143,11 @@ struct CommandPaletteView: View {
         }
 
         VStack(alignment: .leading, spacing: 0) {
-            CommandPaletteQuery(query: $rawQuery, placeholder: placeholder) { event in
+            CommandPaletteQuery(
+                query: $rawQuery,
+                placeholder: placeholder,
+                exitsOnFocusLoss: exitsOnFocusLoss
+            ) { event in
                 switch event {
                 case .exit:
                     if let onExit {
@@ -132,6 +159,7 @@ struct CommandPaletteView: View {
                 case .submit:
                     if let option = selectedOption, !option.dismisses {
                         option.action()
+                        refreshDynamicOptions()
                     } else {
                         isPresented = false
                         selectedOption?.action()
@@ -169,6 +197,11 @@ struct CommandPaletteView: View {
                         self.selectedIndex = nil
                     }
                 }
+
+                refreshDynamicOptions()
+            }
+            .onAppear {
+                refreshDynamicOptions()
             }
 
             Divider()
@@ -177,12 +210,27 @@ struct CommandPaletteView: View {
                 options: filteredOptions,
                 query: query,
                 selectedIndex: $selectedIndex,
-                hoveredOptionID: $hoveredOptionID) { option in
+                hoveredOptionID: $hoveredOptionID,
+                maxHeight: maxHeight) { option in
                     if option.dismisses {
                         isPresented = false
+                        option.action()
+                    } else {
+                        option.action()
+                        refreshDynamicOptions()
                     }
-                    option.action()
                 }
+
+            if let footer {
+                footer
+            }
+        }
+        .onExitCommand {
+            if let onExit {
+                onExit()
+            } else {
+                isPresented = false
+            }
         }
         .frame(maxWidth: 500)
         .background(
@@ -219,16 +267,19 @@ struct CommandPaletteView: View {
 private struct CommandPaletteQuery: View {
     @Binding var query: String
     var placeholder: String = "Execute a command…"
+    var exitsOnFocusLoss: Bool = true
     var onEvent: ((KeyboardEvent) -> Void)?
     @FocusState private var isTextFieldFocused: Bool
 
     init(
         query: Binding<String>,
         placeholder: String = "Execute a command…",
+        exitsOnFocusLoss: Bool = true,
         onEvent: ((KeyboardEvent) -> Void)? = nil
     ) {
         _query = query
         self.placeholder = placeholder
+        self.exitsOnFocusLoss = exitsOnFocusLoss
         self.onEvent = onEvent
     }
 
@@ -265,7 +316,7 @@ private struct CommandPaletteQuery: View {
                 .textFieldStyle(.plain)
                 .focused($isTextFieldFocused)
                 .onChange(of: isTextFieldFocused) { focused in
-                    if !focused {
+                    if !focused && exitsOnFocusLoss {
                         onEvent?(.exit)
                     }
                 }
@@ -291,7 +342,8 @@ private struct CommandTable: View {
     var options: [CommandOption]
     var query: String
     @Binding var selectedIndex: UInt?
-    @Binding var hoveredOptionID: UUID?
+    @Binding var hoveredOptionID: String?
+    var maxHeight: CGFloat
     var action: (CommandOption) -> Void
 
     var body: some View {
@@ -302,7 +354,7 @@ private struct CommandTable: View {
         } else {
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(options.enumerated()), id: \.1.id) { index, option in
                             CommandRow(
                                 option: option,
@@ -322,9 +374,8 @@ private struct CommandTable: View {
                             }
                         }
                     }
-                    .padding(10)
                 }
-                .frame(maxHeight: 200)
+                .frame(maxHeight: maxHeight)
                 .onChange(of: selectedIndex) { _ in
                     guard let selectedIndex,
                           selectedIndex < options.count else { return }
@@ -341,8 +392,47 @@ private struct CommandRow: View {
     let option: CommandOption
     var query: String
     var isSelected: Bool
-    @Binding var hoveredID: UUID?
+    @Binding var hoveredID: String?
     var action: () -> Void
+
+    /// True when this row renders a theme preview with its own colors.
+    private var showsThemeColors: Bool {
+        option.preview != nil
+    }
+
+    private var rowForeground: Color {
+        option.preview?.foreground ?? .primary
+    }
+
+    /// The row background: theme rows always show the theme's own background.
+    /// Selection and hover are separate translucent overlays on top of it.
+    private var rowBackground: some View {
+        ZStack {
+            if let preview = option.preview {
+                preview.background
+            }
+
+            if isSelected {
+                Color.accentColor.opacity(option.preview == nil ? 0.2 : 0.3)
+            } else if hoveredID == option.id {
+                if option.preview == nil {
+                    Color.secondary.opacity(0.2)
+                } else {
+                    Color.accentColor.opacity(0.15)
+                }
+            }
+        }
+    }
+
+    private var rowBorderColor: Color {
+        if option.preview != nil {
+            return isSelected
+                ? Color.accentColor
+                : Color.accentColor.opacity(hoveredID == option.id ? 0.45 : 0)
+        }
+
+        return Color.accentColor.opacity(option.emphasis && !isSelected ? 0.3 : 0)
+    }
 
     private var highlightedTitle: Text {
         guard !query.isEmpty,
@@ -360,7 +450,9 @@ private struct CommandRow: View {
             let attrStart = attributed.index(attributed.startIndex, offsetByCharacters: offset)
             let attrEnd = attributed.index(attrStart, offsetByCharacters: 1)
             attributed[attrStart..<attrEnd].font = .body.bold()
-            attributed[attrStart..<attrEnd].foregroundColor = Color.accentColor
+            if !showsThemeColors {
+                attributed[attrStart..<attrEnd].foregroundColor = Color.accentColor
+            }
         }
 
         return Text(attributed)
@@ -380,7 +472,9 @@ private struct CommandRow: View {
             let attrStart = attributed.index(attributed.startIndex, offsetByCharacters: offset)
             let attrEnd = attributed.index(attrStart, offsetByCharacters: 1)
             attributed[attrStart..<attrEnd].font = .caption.bold()
-            attributed[attrStart..<attrEnd].foregroundColor = Color.accentColor
+            if !showsThemeColors {
+                attributed[attrStart..<attrEnd].foregroundColor = Color.accentColor
+            }
         }
 
         return Text(attributed)
@@ -397,17 +491,24 @@ private struct CommandRow: View {
 
                 if let icon = option.leadingIcon {
                     Image(systemName: icon)
-                        .foregroundStyle(option.emphasis ? Color.accentColor : .secondary)
+                        .foregroundStyle(
+                            showsThemeColors
+                                ? rowForeground
+                                : (option.emphasis ? Color.accentColor : .secondary)
+                        )
                         .font(.system(size: 14, weight: .medium))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     highlightedTitle
+                        .foregroundColor(rowForeground)
 
                     if let subtitle = option.subtitle ?? option.description {
                         highlightedSubtitle(subtitle)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(
+                                showsThemeColors ? rowForeground.opacity(0.8) : Color.secondary
+                            )
                     }
                 }
 
@@ -419,30 +520,40 @@ private struct CommandRow: View {
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
                         .background(
-                            Capsule().fill(Color.accentColor.opacity(0.15))
+                            Capsule().fill(
+                                showsThemeColors
+                                    ? rowForeground.opacity(0.15)
+                                    : Color.accentColor.opacity(0.15)
+                            )
                         )
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(showsThemeColors ? rowForeground : Color.accentColor)
                 }
 
                 if let symbols = option.symbols {
                     ShortcutSymbolsView(symbols: symbols)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(
+                            showsThemeColors ? rowForeground.opacity(0.8) : Color.secondary
+                        )
                 }
             }
             .padding(8)
             .contentShape(Rectangle())
-            .background(
-                isSelected
-                    ? Color.accentColor.opacity(0.2)
-                    : (hoveredID == option.id
-                       ? Color.secondary.opacity(0.2)
-                       : Color.clear)
-            )
+            .background(rowBackground)
             .overlay(
-                RoundedRectangle(cornerRadius: 5)
-                    .strokeBorder(Color.accentColor.opacity(option.emphasis && !isSelected ? 0.3 : 0), lineWidth: 1.5)
+                Group {
+                    if option.preview == nil {
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(rowBorderColor, lineWidth: 1.5)
+                    } else {
+                        Rectangle()
+                            .strokeBorder(
+                                rowBorderColor,
+                                lineWidth: isSelected ? 2 : (hoveredID == option.id ? 1 : 0)
+                            )
+                    }
+                }
             )
-            .cornerRadius(5)
+            .cornerRadius(option.preview == nil ? 5 : 0)
         }
         .help(option.description ?? "")
         .buttonStyle(.plain)

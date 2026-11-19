@@ -65,7 +65,10 @@ struct TerminalCommandPaletteView: View {
                                     options: [],
                                     dynamicOptions: themeOptions(for:),
                                     onExit: { mode = .commands },
-                                    placeholder: "Search themes…"
+                                    placeholder: "Search themes…",
+                                    maxHeight: 420,
+                                    exitsOnFocusLoss: false,
+                                    footer: appearanceFooter
                                 )
                                 .id(PaletteMode.themes)
                             }
@@ -108,7 +111,8 @@ struct TerminalCommandPaletteView: View {
             title: "Choose Theme…",
             description: "Search and apply a color theme.",
             leadingIcon: "paintpalette",
-            dismisses: false
+            dismisses: false,
+            id: "choose-theme"
         ) {
             mode = .themes
         }
@@ -124,7 +128,8 @@ struct TerminalCommandPaletteView: View {
                 return CommandOption(
                     title: c.title,
                     description: c.description,
-                    symbols: symbols
+                    symbols: symbols,
+                    id: "command:\(c.action)"
                 ) {
                     onAction(c.action)
                 }
@@ -136,6 +141,12 @@ struct TerminalCommandPaletteView: View {
         (NSApp.delegate as? AppDelegate)?.ghostty
     }
 
+    /// Appearance controls shown below the theme list.
+    private var appearanceFooter: AnyView? {
+        guard let ghostty else { return nil }
+        return AnyView(ThemeAppearanceControls(ghostty: ghostty, config: ghosttyConfig))
+    }
+
     /// Theme options for the current query. An empty query shows the curated
     /// `theme-cycle` list; any other query searches all available themes.
     private func themeOptions(for query: String) -> [CommandOption] {
@@ -144,33 +155,30 @@ struct TerminalCommandPaletteView: View {
 
         if query.isEmpty {
             var names = ghostty.config.themeCycle
-            if let current {
-                names.removeAll { $0 == current }
+            if let current, !names.contains(current) {
                 names.insert(current, at: 0)
             }
 
             return names.map { name in
-                let theme = GhosttyThemes.all.first { $0.name == name }
-                    ?? GhosttyTheme(name: name, background: nil)
-                return themeOption(theme, current: current, ghostty: ghostty)
+                themeOption(GhosttyThemes.theme(named: name), current: current, ghostty: ghostty)
             }
         }
 
         return searchThemes(query)
             .prefix(40)
-            .map { themeOption($0, current: current, ghostty: ghostty) }
+            .map { themeOption(GhosttyThemes.theme(named: $0), current: current, ghostty: ghostty) }
     }
 
-    /// Searches all themes for the query, ranking prefix matches first.
-    private func searchThemes(_ query: String) -> [GhosttyTheme] {
+    /// Searches all theme names for the query, ranking prefix matches first.
+    private func searchThemes(_ query: String) -> [String] {
         let lower = query.lowercased()
-        return GhosttyThemes.all
-            .filter { $0.name.lowercased().contains(lower) }
+        return GhosttyThemes.names
+            .filter { $0.lowercased().contains(lower) }
             .sorted { lhs, rhs in
-                let lhsPrefix = lhs.name.lowercased().hasPrefix(lower)
-                let rhsPrefix = rhs.name.lowercased().hasPrefix(lower)
+                let lhsPrefix = lhs.lowercased().hasPrefix(lower)
+                let rhsPrefix = rhs.lowercased().hasPrefix(lower)
                 if lhsPrefix != rhsPrefix { return lhsPrefix }
-                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+                return lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
             }
     }
 
@@ -182,9 +190,12 @@ struct TerminalCommandPaletteView: View {
         CommandOption(
             title: "Theme: \(theme.name)",
             subtitle: theme.subtitle,
-            leadingColor: theme.previewColor,
-            badge: theme.name == current ? "Current" : nil
+            preview: theme.preview,
+            badge: theme.name == current ? "Current" : nil,
+            dismisses: false,
+            id: "theme:\(theme.name)"
         ) {
+            guard theme.name != current else { return }
             ghostty.applyTheme(theme.name)
         }
     }
@@ -219,6 +230,7 @@ struct TerminalCommandPaletteView: View {
                     subtitle: subtitle,
                     leadingIcon: "rectangle.on.rectangle",
                     leadingColor: displayColor?.displayColor.map { Color($0) },
+                    id: "surface:\(ObjectIdentifier(surface).hexString)",
                     sortKey: ObjectIdentifier(surface)
                 ) {
                     NotificationCenter.default.post(

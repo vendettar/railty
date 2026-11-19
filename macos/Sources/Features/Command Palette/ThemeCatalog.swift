@@ -1,10 +1,17 @@
 import AppKit
 import SwiftUI
 
+/// A two-tone preview of a theme's background and foreground colors.
+struct ThemePreview {
+    let background: Color
+    let foreground: Color
+}
+
 /// A theme available on disk, used by the command palette's theme picker.
 struct GhosttyTheme: Identifiable, Hashable {
     let name: String
     let background: NSColor?
+    let foreground: NSColor?
 
     var id: String { name }
 
@@ -19,19 +26,64 @@ struct GhosttyTheme: Identifiable, Hashable {
         return background.isLightColor
     }
 
-    var previewColor: Color? {
-        background.map { Color($0) }
+    var preview: ThemePreview? {
+        guard let background else { return nil }
+        return ThemePreview(
+            background: Color(background),
+            foreground: Color(foreground ?? .textColor)
+        )
     }
 }
 
 /// Enumerates the themes bundled with Railty and those installed by the user.
+///
+/// Only theme names are scanned up front. Preview colors are read from disk
+/// on demand and cached, so opening the picker never blocks on reading
+/// hundreds of theme files.
+@MainActor
 enum GhosttyThemes {
-    /// All available themes, sorted by name. Loaded once on first use.
-    static let all: [GhosttyTheme] = loadAll()
+    /// Maps theme names to their file paths. User themes take priority over
+    /// bundled themes, matching Ghostty's theme lookup order.
+    private static let paths: [String: String] = loadPaths()
 
-    private static func loadAll() -> [GhosttyTheme] {
-        var seen = Set<String>()
-        var themes: [GhosttyTheme] = []
+    /// All available theme names, sorted alphabetically.
+    static let names: [String] = paths.keys.sorted {
+        $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+    }
+
+    /// Returns the theme with the given name, loading its preview colors on
+    /// demand.
+    static func theme(named name: String) -> GhosttyTheme {
+        let colors = colors(for: name)
+        return GhosttyTheme(
+            name: name,
+            background: colors?.background,
+            foreground: colors?.foreground
+        )
+    }
+
+    private struct ThemeColors {
+        let background: NSColor?
+        let foreground: NSColor?
+    }
+
+    private static var colorCache: [String: ThemeColors] = [:]
+
+    private static func colors(for name: String) -> ThemeColors? {
+        if let cached = colorCache[name] { return cached }
+
+        guard let path = paths[name],
+              let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
+            return nil
+        }
+
+        let colors = parseColors(contents)
+        colorCache[name] = colors
+        return colors
+    }
+
+    private static func loadPaths() -> [String: String] {
+        var result: [String: String] = [:]
 
         for dir in directories() {
             guard let entries = try? FileManager.default.contentsOfDirectory(atPath: dir) else {
@@ -39,21 +91,18 @@ enum GhosttyThemes {
             }
 
             for name in entries {
-                guard !name.hasPrefix("."), !seen.contains(name) else { continue }
+                guard !name.hasPrefix("."), result[name] == nil else { continue }
 
                 let path = (dir as NSString).appendingPathComponent(name)
                 var isDirectory: ObjCBool = false
                 guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory),
                       !isDirectory.boolValue else { continue }
 
-                seen.insert(name)
-                themes.append(load(name: name, at: path))
+                result[name] = path
             }
         }
 
-        return themes.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
+        return result
     }
 
     private static func directories() -> [String] {
@@ -73,28 +122,30 @@ enum GhosttyThemes {
         return result
     }
 
-    private static func load(name: String, at path: String) -> GhosttyTheme {
-        guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
-            return GhosttyTheme(name: name, background: nil)
-        }
-
+    private static func parseColors(_ contents: String) -> ThemeColors {
         var background: NSColor?
+        var foreground: NSColor?
+
         for line in contents.components(separatedBy: .newlines) {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.hasPrefix("#"),
                   let eq = trimmed.firstIndex(of: "=") else { continue }
 
             let key = trimmed[..<eq].trimmingCharacters(in: .whitespacesAndNewlines)
-            guard key == "background" else { continue }
-
             let value = trimmed[trimmed.index(after: eq)...]
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            if let color = NSColor(themeHex: value) {
-                background = color
+
+            switch key {
+            case "background":
+                background = NSColor(themeHex: value)
+            case "foreground":
+                foreground = NSColor(themeHex: value)
+            default:
+                continue
             }
         }
 
-        return GhosttyTheme(name: name, background: background)
+        return ThemeColors(background: background, foreground: foreground)
     }
 }
 
