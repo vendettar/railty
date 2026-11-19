@@ -4,11 +4,11 @@
   "updated_at": "2026-11-19",
   "last_full_sync_date": null,
   "railty": {
-    "head_sha": "d5fba5406",
+    "head_sha": "a78a78153",
     "latest_release_tag": "v0.1.12",
     "pinned_zig_version": "0.17.0",
-    "last_validated_commit": "d5fba54068d12df04d47606040480f2bd8e1f637",
-    "last_validation_scope": "print fast-path chain (12 commits): printSlice/Screen/Page/Cursor/Terminal test filters passed, test-lib-vt passed, GhosttyKit/macOS build passed, fmt clean; arm64 interleaved benchmarks 1.45x-2.64x on ASCII/CJK/mixed corpora with one 2% regression on CJK-only runs, RSS unchanged; see docs/upstream/benchmarks/2026-11-19-print-fastpath.md; GUI runtime not tested (no UI change)",
+    "last_validated_commit": "a78a781531e904db7f374f51ff3694bc034ac07f",
+    "last_validation_scope": "theme picker dismissal fix: macOS Debug arm64 build passed, SwiftLint clean, release workflow 44468191795 built and published v0.1.12; click-outside/Escape behavior not GUI-automated, user verification requested",
     "sync_branch": null
   },
   "upstreams": {
