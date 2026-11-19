@@ -41,6 +41,16 @@ struct TerminalCommandPaletteView: View {
     var body: some View {
         ZStack {
             if isPresented {
+                // The theme picker disables focus-loss dismissal so that
+                // selecting themes and using the footer controls keeps the
+                // panel open. Catch clicks outside the panel explicitly so
+                // clicking away still dismisses it.
+                if mode == .themes {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { isPresented = false }
+                }
+
                 GeometryReader { geometry in
                     VStack {
                         Spacer().frame(height: geometry.size.height * 0.05)
@@ -64,7 +74,7 @@ struct TerminalCommandPaletteView: View {
                                     backgroundColor: ghosttyConfig.backgroundColor,
                                     options: [],
                                     dynamicOptions: themeOptions(for:),
-                                    onExit: { mode = .commands },
+                                    onExit: { isPresented = false },
                                     placeholder: "Search themes…",
                                     maxHeight: 420,
                                     exitsOnFocusLoss: false,
