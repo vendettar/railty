@@ -26,6 +26,8 @@ Install with Homebrew from the Railty tap:
 
 ```sh
 brew tap vendettar/railty
+# Homebrew 7+ requires trusting third-party taps.
+brew trust --tap vendettar/railty
 brew install --cask railty
 ```
 
