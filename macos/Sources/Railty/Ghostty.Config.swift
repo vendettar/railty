@@ -559,7 +559,11 @@ extension Ghostty {
 
         /// Sidebar theme derived from the terminal background/foreground colors.
         var sidebarTheme: SidebarTheme {
-            return SidebarTheme.from(background: backgroundNSColor, foreground: foregroundNSColor)
+            return SidebarTheme.from(
+                background: backgroundNSColor,
+                foreground: foregroundNSColor,
+                opacity: backgroundOpacity
+            )
         }
 
         /// Which fields to show in sidebar tab cards.

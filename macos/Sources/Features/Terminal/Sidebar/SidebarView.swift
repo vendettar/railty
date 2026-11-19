@@ -7,27 +7,31 @@ struct SidebarTheme: Equatable {
     let foreground: Color
     let secondaryText: Color
     let activeTabBackground: Color
+    let cardBorder: Color
     let attentionColor: Color
 
     /// Create from Ghostty terminal colors.
-    static func from(background: NSColor, foreground: NSColor) -> SidebarTheme {
-        let bgLuminance = background.luminance
-        let sidebarBg: Color
-        if bgLuminance > 0.5 {
-            // Light theme: darken sidebar slightly
-            sidebarBg = Color(nsColor: background.darken(by: 0.05))
-        } else {
-            // Dark theme: lighten sidebar slightly
-            sidebarBg = Color(nsColor: background.blended(withFraction: 0.08, of: NSColor.white) ?? background)
-        }
+    static func from(
+        background: NSColor,
+        foreground: NSColor,
+        opacity: Double
+    ) -> SidebarTheme {
+        // Slightly darken the terminal background so the sidebar is
+        // distinguishable, while keeping the theme's hue.
+        let sidebarBackground = background.darken(by: 0.10)
+
+        // Match the terminal's transparency so the window blur shows
+        // through, with a floor so the sidebar never becomes unreadable.
+        let alpha = min(max(opacity, 0.15), 1)
 
         let fg = Color(nsColor: foreground)
 
         return SidebarTheme(
-            background: sidebarBg,
+            background: Color(nsColor: sidebarBackground).opacity(alpha),
             foreground: fg,
             secondaryText: fg.opacity(0.6),
             activeTabBackground: fg.opacity(0.12),
+            cardBorder: fg.opacity(0.12),
             attentionColor: .orange
         )
     }
@@ -39,6 +43,7 @@ struct SidebarTheme: Equatable {
             foreground: .primary,
             secondaryText: .secondary,
             activeTabBackground: Color.accentColor.opacity(0.12),
+            cardBorder: Color(nsColor: .separatorColor).opacity(0.3),
             attentionColor: .orange
         )
     }
@@ -428,9 +433,9 @@ private struct SidebarTabCard: View {
         return .clear
     }
 
-    /// The border color for the thin card border — always neutral gray.
+    /// The border color for the thin card border — blends with the theme.
     private var cardBorderColor: Color {
-        Color(nsColor: .separatorColor).opacity(0.3)
+        theme.cardBorder
     }
 
     var body: some View {

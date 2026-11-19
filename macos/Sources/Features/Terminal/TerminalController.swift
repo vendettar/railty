@@ -73,7 +73,6 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
     /// The sidebar hosting view, kept for theme updates on config change.
     private var sidebarHostingView: NSHostingView<SidebarView>?
 
-
     init(_ ghostty: Ghostty.App,
          withBaseConfig base: Ghostty.SurfaceConfiguration? = nil,
          withSurfaceTree tree: SplitTree<Ghostty.SurfaceView>? = nil,

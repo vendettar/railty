@@ -38,7 +38,6 @@ struct GitPanelView: View {
                     .padding(.bottom, 10)
                 }
             }
-            .background(theme.background)
         }
     }
 
@@ -293,7 +292,7 @@ struct GitPanelView: View {
     /// environment, so we source it through a login+interactive shell (which also
     /// puts the editor's CLI on PATH). Values are wrapped in \1 markers so noisy
     /// shell profiles (banners, etc.) can't corrupt what we read back.
-    private static func resolveEditorEnv() -> ResolvedEditor {
+    private nonisolated static func resolveEditorEnv() -> ResolvedEditor {
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let process = Process()
         process.executableURL = URL(fileURLWithPath: shell)
@@ -334,7 +333,7 @@ struct GitPanelView: View {
     /// editor string is split into words here and passed as separate args: zsh
     /// does not word-split unquoted parameter expansions, so `exec $EDITOR`
     /// would treat "cursor --wait" as one command. `exec "$@"` avoids that.
-    private static func launchInEditor(editor: String, path: String) {
+    private nonisolated static func launchInEditor(editor: String, path: String) {
         let words = editor.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
         guard !words.isEmpty else { return }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
