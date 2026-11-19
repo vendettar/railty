@@ -725,8 +725,8 @@ pub const Action = union(enum) {
     /// option. If `theme-cycle` is not set or is empty, this action does
     /// nothing.
     ///
-    /// This only changes the theme for the current session; the `theme`
-    /// configuration value is not modified.
+    /// The selected theme is written back to the configuration file so it
+    /// persists across restarts.
     toggle_theme,
 
     /// Close the current "surface", whether that is a window, tab, split, etc.

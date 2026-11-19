@@ -617,9 +617,14 @@ theme: ?Theme = null,
 /// bundled with Railty or placed in your themes configuration directory.
 /// Set this to an empty value to disable theme cycling.
 ///
-/// Switching themes this way only affects the current session. Your
-/// configuration file is never modified.
-@"theme-cycle": ?[:0]const u8 = "Catppuccin Mocha, Catppuccin Latte, TokyoNight Storm, TokyoNight Day, Rose Pine, Rose Pine Dawn, Gruvbox Dark, Gruvbox Light, Nord, Nord Light, Everforest Dark Med, Everforest Light Med, Kanagawa Wave, Kanagawa Lotus, GitHub Dark Default, GitHub Light Default",
+/// Switching themes writes the selected theme back to your configuration
+/// file so the choice persists across restarts.
+@"theme-cycle": ?[:0]const u8 =
+    "Catppuccin Mocha, Catppuccin Latte, TokyoNight Storm, " ++
+    "TokyoNight Day, Rose Pine, Rose Pine Dawn, Gruvbox Dark, " ++
+    "Gruvbox Light, Nord, Nord Light, Everforest Dark Med, " ++
+    "Everforest Light Med, Kanagawa Wave, Kanagawa Lotus, " ++
+    "GitHub Dark Default, GitHub Light Default",
 
 /// Background color for the window.
 /// Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color.
