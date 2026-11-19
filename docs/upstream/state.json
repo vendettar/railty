@@ -5,7 +5,7 @@
   "last_full_sync_date": null,
   "railty": {
     "head_sha": "d5fba5406",
-    "latest_release_tag": "v0.1.11",
+    "latest_release_tag": "v0.1.12",
     "pinned_zig_version": "0.17.0",
     "last_validated_commit": "d5fba54068d12df04d47606040480f2bd8e1f637",
     "last_validation_scope": "print fast-path chain (12 commits): printSlice/Screen/Page/Cursor/Terminal test filters passed, test-lib-vt passed, GhosttyKit/macOS build passed, fmt clean; arm64 interleaved benchmarks 1.45x-2.64x on ASCII/CJK/mixed corpora with one 2% regression on CJK-only runs, RSS unchanged; see docs/upstream/benchmarks/2026-11-19-print-fastpath.md; GUI runtime not tested (no UI change)",
@@ -141,6 +141,7 @@
     "2026-11-17 DEFER audit: all 75 template-reason entries were path-sampled; 73 are libghostty-vt ABI/packaging, 2 had inaccurate reasons and were corrected in ledger.jsonl (9b848b0f5c, ef1649c853) with decisions unchanged.",
     "2026-11-19: host drift (~2-4%) exceeds small patch effects, so patch benchmarks must interleave baseline and candidate binaries; sequential blocks produced misleading results for the cursor CR fast path.",
     "2026-11-19: the print fast-path chain required seven prerequisite commits (blank-row hint, OSC 133 prompt scan, SGR style packing); c12d42eaf8 references the set_attributes action added by 54d162da5b, so the chain can never be ported partially.",
-    "2026-11-19: v0.1.11 released from 2acee3ab6 (cursor CR fast path + print fast-path chain); release asset verified for LICENSE/THIRD_PARTY_LICENSES, bundle id, and version; Homebrew Cask updated to 0.1.11."
+    "2026-11-19: v0.1.11 released from 2acee3ab6 (cursor CR fast path + print fast-path chain); release asset verified for LICENSE/THIRD_PARTY_LICENSES, bundle id, and version; Homebrew Cask updated to 0.1.11.",
+    "2026-11-19: v0.1.12 released from a78a78153 (theme picker dismisses on outside click and Escape); release asset verified for version 0.1.12, bundle id, and LICENSE/THIRD_PARTY_LICENSES; Homebrew Cask updated to 0.1.12."
   ]
 }
