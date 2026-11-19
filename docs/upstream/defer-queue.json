@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-11-17",
+  "updated_at": "2026-11-19",
   "source_ledger": "docs/upstream/ledger.jsonl",
   "entries": [
     {
@@ -1646,18 +1646,6 @@
       "review_status": "awaiting_upstream",
       "last_reassessed_at": "2026-11-17",
       "notes": "C ABI, docs, packaging and dependency work; no runtime benefit for the macOS app."
-    },
-    {
-      "source": "ghostty",
-      "sha": "8434d0900e86a63907d0da4b0892cbb89533be0d",
-      "topic": "terminal-perf-pagelist-fastpath",
-      "group": "terminal-cursor-pin-fastpath",
-      "priority": "P2",
-      "revisit_trigger": "manual_dedicated_port",
-      "validation_plan": "Cherry-pick the 2-line change; run Screen/lib-vt tests and stream benchmark; macOS arm64 build",
-      "review_status": "candidate_next_batch",
-      "last_reassessed_at": "2026-11-17",
-      "notes": "Smallest independent optimization; upstream reported 1.02-1.06x on scrolling streams."
     },
     {
       "source": "ghostty",

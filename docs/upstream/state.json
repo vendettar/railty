@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "protocol_version": "1.0",
-  "updated_at": "2026-11-17",
+  "updated_at": "2026-11-19",
   "last_full_sync_date": null,
   "railty": {
-    "head_sha": "4a61fda77",
-    "latest_release_tag": "v0.1.4",
+    "head_sha": "9a0705bf4",
+    "latest_release_tag": "v0.1.10",
     "pinned_zig_version": "0.17.0",
-    "last_validated_commit": "4a61fda77",
-    "last_validation_scope": "tmux unit tests passed; macOS arm64 build run 44136063086 succeeded; runtime smoke on the experimental build: tmux 3.8 control client attached (control=1), echo/split/non-UTF-8 output stable; CI runs the upstream sync Python tests",
+    "last_validated_commit": "9a0705bf4df382a7d642a29ed4836ddd38d355c9",
+    "last_validation_scope": "Screen/Page/Cursor Zig test filters passed; GhosttyKit/macOS build (-Demit-macos-app=false -Dxcframework-target=native) passed; arm64 interleaved benchmarks for the cursor CR fast path recorded in docs/upstream/benchmarks/2026-11-19-cursor-cr-fastpath.md; GUI runtime not tested (no UI change)",
     "sync_branch": null
   },
   "upstreams": {
@@ -16,17 +16,17 @@
       "remote": "ghostty",
       "url": "https://github.com/ghostty-org/ghostty.git",
       "branch": "main",
-      "remote_head_sha": "f3e1f65bb602ac3d441ffdd5f9645bef66a39648",
+      "remote_head_sha": "3f2fe1472882349ca140a83deca150573a7018fb",
       "latest_release_tag": "v1.4.0",
       "latest_release_sha": "83fb95624b0439ee660c2679b43b38c8b63769cd",
       "last_integrated_sha": "83fb95624b0439ee660c2679b43b38c8b63769cd",
-      "last_reviewed_sha": "f3e1f65bb602ac3d441ffdd5f9645bef66a39648",
+      "last_reviewed_sha": "3f2fe1472882349ca140a83deca150573a7018fb",
       "reviewed_range": {
         "base_sha": "83fb95624b0439ee660c2679b43b38c8b63769cd",
-        "head_sha": "f3e1f65bb602ac3d441ffdd5f9645bef66a39648",
-        "total_commits": 401,
-        "non_merge_commits": 271,
-        "merge_commits": 130
+        "head_sha": "3f2fe1472882349ca140a83deca150573a7018fb",
+        "total_commits": 404,
+        "non_merge_commits": 273,
+        "merge_commits": 131
       }
     },
     "sidegeist": {
@@ -49,29 +49,29 @@
   },
   "ledger_summary": {
     "file": "docs/upstream/ledger.jsonl",
-    "total_entries": 401,
+    "total_entries": 404,
     "by_decision": {
-      "INCLUDE": 48,
-      "DEFER": 146,
-      "SKIP": 207,
+      "INCLUDE": 49,
+      "DEFER": 145,
+      "SKIP": 210,
       "ALREADY_INCLUDED": 0,
       "NEEDS_REVIEW": 0
     },
     "by_integration": {
       "pending": 0,
-      "deferred": 146,
-      "not-applicable": 207,
-      "integrated": 44,
+      "deferred": 145,
+      "not-applicable": 210,
+      "integrated": 45,
       "adapted": 4,
       "rejected": 0
     }
   },
   "deferred_review": {
     "queue_file": "docs/upstream/defer-queue.json",
-    "last_reviewed_at": "2026-11-17",
-    "total": 146,
+    "last_reviewed_at": "2026-11-19",
+    "total": 145,
     "by_priority": {
-      "P2": 40,
+      "P2": 39,
       "P3": 102,
       "P1": 4
     },
@@ -80,8 +80,7 @@
       "awaiting_upstream": 75,
       "awaiting_validation": 20,
       "awaiting_dependencies": 45,
-      "no_runtime_path": 1,
-      "candidate_next_batch": 1
+      "no_runtime_path": 1
     },
     "satisfied_triggers": 0,
     "report": "docs/upstream/reviews/2026-11-17-deferred-review.md",
@@ -89,8 +88,8 @@
     "experiment_commit": "f6cd5e4fd",
     "experiment_ci_run": 44062908329,
     "experiment_ci_result": "success",
-    "experiment_validation": "lib-vt tests passed, macOS arm64 build passed, performance NOT_TESTED",
-    "experiment_merged": false,
+    "experiment_validation": "ledger DEFER moved to INCLUDE/integrated; Screen/Page/Cursor tests passed; GhosttyKit macOS build passed; arm64 interleaved benchmark 1.036x on pure-CR and 1.012x on CR-heavy streams; no regression on ASCII/scroll/wide",
+    "experiment_merged": true,
     "prune_memory_merge": {
       "upstream_sha": "d0addb9cdf9a30901bd953421dccada3bf610d7c",
       "branch": "sync/ghostty-pagelist-prune-memory",
@@ -118,14 +117,18 @@
       "validation": "tmux unit tests passed, macOS arm64 build passed, runtime NOT_TESTED",
       "merged": true,
       "runtime_smoke": "passed (tmux 3.8 control=1; echo/split/non-UTF-8 output stable)"
-    }
+    },
+    "experiment_merge_commit": "9a0705bf4df382a7d642a29ed4836ddd38d355c9",
+    "experiment_benchmark_report": "docs/upstream/benchmarks/2026-11-19-cursor-cr-fastpath.md"
   },
   "active_task": {
     "status": "completed",
     "branch": "main",
-    "description": "Upstream Sync v1.3 complete: tmux oversized-id/arena-leak and %output byte-safety fixes merged into main after unit, macOS build, and runtime smoke validation. No release was created.",
+    "description": "Upstream perf round v1.1 complete: performance baseline recorded and upstream 8434d0900e (cursor CR fast path) ported, measured on arm64, and merged into main. No release was created.",
     "next_recommended_branch": null,
     "remaining_priority_groups": [
+      "terminal-print-fastpath",
+      "terminal-pagelist-capacity",
       "macos-c-api-nullability (on demand)"
     ]
   },
@@ -136,6 +139,7 @@
     "Always fetch remotes with --no-tags to avoid tag collisions on shared 'tip' or local Railty release tags.",
     "tools/upstream/check.sh warns when state.json drifts from HEAD, the newest origin release tag, or ledger railty_commit ancestry; docs-only HEAD drift is reported as informational, not a warning.",
     "Release-tag consistency checks use origin tags only, because local tags also contain shared Ghostty/Sidegeist release tags such as v1.4.0.",
-    "2026-11-17 DEFER audit: all 75 template-reason entries were path-sampled; 73 are libghostty-vt ABI/packaging, 2 had inaccurate reasons and were corrected in ledger.jsonl (9b848b0f5c, ef1649c853) with decisions unchanged."
+    "2026-11-17 DEFER audit: all 75 template-reason entries were path-sampled; 73 are libghostty-vt ABI/packaging, 2 had inaccurate reasons and were corrected in ledger.jsonl (9b848b0f5c, ef1649c853) with decisions unchanged.",
+    "2026-11-19: host drift (~2-4%) exceeds small patch effects, so patch benchmarks must interleave baseline and candidate binaries; sequential blocks produced misleading results for the cursor CR fast path."
   ]
 }
