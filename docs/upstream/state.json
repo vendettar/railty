@@ -4,11 +4,11 @@
   "updated_at": "2026-11-19",
   "last_full_sync_date": null,
   "railty": {
-    "head_sha": "9a0705bf4",
+    "head_sha": "d5fba5406",
     "latest_release_tag": "v0.1.10",
     "pinned_zig_version": "0.17.0",
-    "last_validated_commit": "9a0705bf4df382a7d642a29ed4836ddd38d355c9",
-    "last_validation_scope": "Screen/Page/Cursor Zig test filters passed; GhosttyKit/macOS build (-Demit-macos-app=false -Dxcframework-target=native) passed; arm64 interleaved benchmarks for the cursor CR fast path recorded in docs/upstream/benchmarks/2026-11-19-cursor-cr-fastpath.md; GUI runtime not tested (no UI change)",
+    "last_validated_commit": "d5fba54068d12df04d47606040480f2bd8e1f637",
+    "last_validation_scope": "print fast-path chain (12 commits): printSlice/Screen/Page/Cursor/Terminal test filters passed, test-lib-vt passed, GhosttyKit/macOS build passed, fmt clean; arm64 interleaved benchmarks 1.45x-2.64x on ASCII/CJK/mixed corpora with one 2% regression on CJK-only runs, RSS unchanged; see docs/upstream/benchmarks/2026-11-19-print-fastpath.md; GUI runtime not tested (no UI change)",
     "sync_branch": null
   },
   "upstreams": {
@@ -51,17 +51,17 @@
     "file": "docs/upstream/ledger.jsonl",
     "total_entries": 404,
     "by_decision": {
-      "INCLUDE": 49,
-      "DEFER": 145,
+      "INCLUDE": 61,
+      "DEFER": 133,
       "SKIP": 210,
       "ALREADY_INCLUDED": 0,
       "NEEDS_REVIEW": 0
     },
     "by_integration": {
       "pending": 0,
-      "deferred": 145,
+      "deferred": 133,
       "not-applicable": 210,
-      "integrated": 45,
+      "integrated": 57,
       "adapted": 4,
       "rejected": 0
     }
@@ -69,17 +69,17 @@
   "deferred_review": {
     "queue_file": "docs/upstream/defer-queue.json",
     "last_reviewed_at": "2026-11-19",
-    "total": 145,
+    "total": 133,
     "by_priority": {
-      "P2": 39,
+      "P2": 27,
       "P3": 102,
       "P1": 4
     },
     "by_status": {
       "awaiting_toolchain": 4,
       "awaiting_upstream": 75,
-      "awaiting_validation": 20,
-      "awaiting_dependencies": 45,
+      "awaiting_validation": 19,
+      "awaiting_dependencies": 34,
       "no_runtime_path": 1
     },
     "satisfied_triggers": 0,
@@ -124,10 +124,9 @@
   "active_task": {
     "status": "completed",
     "branch": "main",
-    "description": "Upstream perf round v1.1 complete: performance baseline recorded and upstream 8434d0900e (cursor CR fast path) ported, measured on arm64, and merged into main. No release was created.",
+    "description": "Upstream perf round v1.2 complete: print fast-path chain and its prerequisites (blank-row hint, OSC 133 prompt scan, SGR style packing) ported, measured on arm64, and merged into main. No release was created.",
     "next_recommended_branch": null,
     "remaining_priority_groups": [
-      "terminal-print-fastpath",
       "terminal-pagelist-capacity",
       "macos-c-api-nullability (on demand)"
     ]
@@ -140,6 +139,7 @@
     "tools/upstream/check.sh warns when state.json drifts from HEAD, the newest origin release tag, or ledger railty_commit ancestry; docs-only HEAD drift is reported as informational, not a warning.",
     "Release-tag consistency checks use origin tags only, because local tags also contain shared Ghostty/Sidegeist release tags such as v1.4.0.",
     "2026-11-17 DEFER audit: all 75 template-reason entries were path-sampled; 73 are libghostty-vt ABI/packaging, 2 had inaccurate reasons and were corrected in ledger.jsonl (9b848b0f5c, ef1649c853) with decisions unchanged.",
-    "2026-11-19: host drift (~2-4%) exceeds small patch effects, so patch benchmarks must interleave baseline and candidate binaries; sequential blocks produced misleading results for the cursor CR fast path."
+    "2026-11-19: host drift (~2-4%) exceeds small patch effects, so patch benchmarks must interleave baseline and candidate binaries; sequential blocks produced misleading results for the cursor CR fast path.",
+    "2026-11-19: the print fast-path chain required seven prerequisite commits (blank-row hint, OSC 133 prompt scan, SGR style packing); c12d42eaf8 references the set_attributes action added by 54d162da5b, so the chain can never be ported partially."
   ]
 }
